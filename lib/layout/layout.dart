@@ -220,7 +220,6 @@ class _AppLayout extends State<AppLayout> with WidgetsBindingObserver {
                       },
                       onUpdate: (position, size) {
                         double w = size.width;
-                        double h = size.height;
                         if (w < 100) {
                           w = 100;
                         }
@@ -240,12 +239,14 @@ class _AppLayout extends State<AppLayout> with WidgetsBindingObserver {
           ],
 
           // popups
-          ...ui.popups.map((pop) => pop.widget ?? Container())
+          ...ui.popups.map((pop) => pop.widget)
         ])));
   }
 }
 
 class TheApp extends StatefulWidget {
+  const TheApp({Key? key}) : super(key: key);
+
   @override
   _TheApp createState() => _TheApp();
 }
@@ -278,7 +279,7 @@ class _TheApp extends State<TheApp> with WidgetsBindingObserver {
     AppProvider app = Provider.of<AppProvider>(context, listen: false);
     UIProvider ui = Provider.of<UIProvider>(context, listen: false);
 
-    final onSearchInFiles = (text,
+    void onSearchInFiles(text,
         {int direction = 1,
         bool caseSensitive = false,
         bool regex = false,
@@ -327,7 +328,7 @@ class _TheApp extends State<TheApp> with WidgetsBindingObserver {
       search.find(text,
           caseSensitive: caseSensitive, regex: regex, path: searchPath);
       ui.clearPopups();
-    };
+    }
 
     return RawKeyboardListener(
       focusNode: focusNode,

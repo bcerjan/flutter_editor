@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as _path;
@@ -8,16 +7,13 @@ import 'package:editor/editor/controller.dart';
 import 'package:editor/editor/document.dart';
 import 'package:editor/layout/layout.dart';
 import 'package:editor/layout/explorer.dart';
-import 'package:editor/services/ffi/bridge.dart';
 import 'package:editor/services/app.dart';
 import 'package:editor/services/util.dart';
-import 'package:editor/services/input.dart';
 import 'package:editor/services/indexer/filesearch.dart';
 import 'package:editor/services/ui/ui.dart';
 import 'package:editor/services/ui/status.dart';
 import 'package:editor/services/highlight/theme.dart';
 import 'package:editor/services/highlight/tmparser.dart';
-import 'package:editor/services/keybindings.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,48 +24,15 @@ void main(List<String> args) async {
   await app.initialize();
   await app.loadSettings();
 
-  FFIBridge.load();
-
-  // FFIMessaging.instance().addListener(FFIListener('whoever', '', (m, l) {
-  //   print('heya!');
-  //   print(l);
-  //   print(m);
-  // }));
-
   String path = './';
   if (args.isNotEmpty) {
     path = args[0];
   }
 
-  FFIBridge.initialize(app.extensionsPath);
-
-  // FFIMessaging.instance().sendMessage({
-  //    'channel': 'git',
-  //    'message': {
-  //       'command': 'status',
-  //       'path': './'
-  //    }
-  // }).then((res) {
-  //   print(res);
-  //   });
-
-  // FFIMessaging.instance().sendMessage({
-  //    'channel': 'sftp',
-  //    'message': {
-  //       'command': 'dir',
-  //       'basePath': 'iceman@127.0.0.1',
-  //       'passphrase': '',
-  //       'path': '/home/iceman/',
-  //       'cmd': 'dir'
-  //    }
-  // }).then((res) {
-  //   print(res);
-  //   });
-
   HLTheme theme = HLTheme.instance();
-  TMParser()
-    ..loadTheme(app.settings['theme'] ?? 'Monokai')
-    ..loadIcons('material-icon-theme');
+  // TMParser()
+  //   ..loadTheme(app.settings['theme'] ?? 'Monokai')
+  //   ..loadIcons('material-icon-theme');
 
   UIProvider ui = UIProvider();
   StatusProvider status = StatusProvider();
@@ -79,13 +42,12 @@ void main(List<String> args) async {
   if (!(await FileSystemEntity.isDirectory(path))) {
     Document? doc = app.open(path);
 
-    FFIBridge.createDocument(doc?.documentId ?? 0, doc?.docPath ?? '');
+    // FFIBridge.createDocument(doc?.documentId ?? 0, doc?.docPath ?? '');
 
     app.openSidebar = false;
     dirPath = _path.dirname(path);
   }
 
-  FocusNode focusNode = FocusNode(debugLabel: 'root');
   ExplorerProvider explorer = ExplorerProvider();
 
   // exclude patterns
@@ -124,13 +86,11 @@ void main(List<String> args) async {
 }
 
 class App extends StatelessWidget {
-  App({FocusNode? this.focusNode});
-  FocusNode? focusNode;
+  App({this.focusNode});
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
-    AppProvider app = Provider.of<AppProvider>(context, listen: false);
-    UIProvider ui = Provider.of<UIProvider>(context, listen: false);
     HLTheme theme = Provider.of<HLTheme>(context);
 
     Brightness scheme = Brightness

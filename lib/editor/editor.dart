@@ -16,7 +16,6 @@ import 'package:editor/editor/search.dart';
 import 'package:editor/editor/minimap.dart';
 import 'package:editor/services/app.dart';
 import 'package:editor/services/input.dart';
-import 'package:editor/services/ffi/bridge.dart';
 import 'package:editor/services/ui/ui.dart';
 import 'package:editor/services/ui/menu.dart';
 import 'package:editor/services/ui/status.dart';
@@ -90,8 +89,8 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
     d.blockComment = lang?.blockComment ?? [];
 
     d.addListener('onCreate', (documentId) {
-      FFIBridge.run(
-          () => FFIBridge.createDocument(documentId, doc.doc.docPath));
+      // FFIBridge.run(
+      //     () => FFIBridge.createDocument(documentId, doc.doc.docPath));
     });
     d.addListener('onSave', (documentId) {
       gitDiff();
@@ -103,14 +102,14 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
       gitDiff();
     });
     d.addListener('onDestroy', (documentId) {
-      FFIBridge.run(() => FFIBridge.destroy_document(documentId));
+      // FFIBridge.run(() => FFIBridge.destroy_document(documentId));
     });
     d.addListener('onAddBlock', (documentId, blockId, line) {
-      FFIBridge.run(() => FFIBridge.add_block(documentId, blockId, line));
+      // FFIBridge.run(() => FFIBridge.add_block(documentId, blockId, line));
       doc.touch();
     });
     d.addListener('onRemoveBlock', (documentId, blockId, line) {
-      FFIBridge.run(() => FFIBridge.remove_block(documentId, blockId, line));
+      // FFIBridge.run(() => FFIBridge.remove_block(documentId, blockId, line));
       doc.touch();
     });
     d.addListener('onInsertText', (text) {});
@@ -193,96 +192,97 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
     }
   }
 
+  // TODO
   void gitDiff() {
-    // print('git diff ${doc.doc.docPath}');
-    // path should be relative from git root
-    FFIMessaging.instance().sendMessage({
-      'channel': 'git',
-      'message': {
-        'command': 'diff',
-        'path': '${_path.dirname(doc.doc.docPath)}',
-        'path_spec': '${doc.doc.docPath}'
-      }
-    }).then((res) {
-      // print(res);
-      if (res == null) {
-        return;
-      }
+    // // print('git diff ${doc.doc.docPath}');
+    // // path should be relative from git root
+    // FFIMessaging.instance().sendMessage({
+    //   'channel': 'git',
+    //   'message': {
+    //     'command': 'diff',
+    //     'path': '${_path.dirname(doc.doc.docPath)}',
+    //     'path_spec': '${doc.doc.docPath}'
+    //   }
+    // }).then((res) {
+    //   // print(res);
+    //   if (res == null) {
+    //     return;
+    //   }
 
-      List<int> previousEdited = <int>[...fileInfo.gitDiffEditLinesTracker];
-      fileInfo.gitDiffLineTracker = <int>[];
-      fileInfo.gitDiffEditLinesTracker = <int>[];
-      fileInfo.idx = -1;
-      fileInfo.idxOffset = 0;
+    //   List<int> previousEdited = <int>[...fileInfo.gitDiffEditLinesTracker];
+    //   fileInfo.gitDiffLineTracker = <int>[];
+    //   fileInfo.gitDiffEditLinesTracker = <int>[];
+    //   fileInfo.idx = -1;
+    //   fileInfo.idxOffset = 0;
 
-      for (final text in res['message']) {
-        if (text.startsWith('@@')) {
-          List<int> nums = <int>[];
-          RegExp regExp =
-              RegExp(r'([0-9]{0,6})', caseSensitive: false, multiLine: false);
-          var matches = regExp.allMatches(text);
-          matches.forEach((m) {
-            var g = m.groups([0]);
-            if (g != null && g.length > 0 && (g[0]?.length ?? 0) > 0) {
-              String s = g[0] ?? '-1';
-              nums.add(int.parse(s));
-            }
-          });
-          if (fileInfo.gitDiffLineTracker.length > 0) {
-            int offset = fileInfo.idxOffset;
-            offset +=
-                fileInfo.gitDiffLineTracker[3] - fileInfo.gitDiffLineTracker[1];
-            fileInfo.idxOffset = offset;
-          }
-          fileInfo.gitDiffLineTracker = nums;
-          fileInfo.idx = 0;
-        } else {
-          int idx = fileInfo.idx;
-          if (text.startsWith(' ')) {
-            idx++;
-          }
-          if (text.startsWith('+')) {
-            int start = fileInfo.gitDiffLineTracker[0];
-            int editedLine = start;
-            editedLine += fileInfo.idx;
-            editedLine += fileInfo.idxOffset;
-            fileInfo.gitDiffEditLinesTracker.add(editedLine - 1);
-            idx++;
-            // print('line edited: ${start} ${editedLine} ${fileInfo.idx} ${fileInfo.idxOffset}');
-          }
-          fileInfo.idx = idx;
-        }
+    //   for (final text in res['message']) {
+    //     if (text.startsWith('@@')) {
+    //       List<int> nums = <int>[];
+    //       RegExp regExp =
+    //           RegExp(r'([0-9]{0,6})', caseSensitive: false, multiLine: false);
+    //       var matches = regExp.allMatches(text);
+    //       matches.forEach((m) {
+    //         var g = m.groups([0]);
+    //         if (g != null && g.length > 0 && (g[0]?.length ?? 0) > 0) {
+    //           String s = g[0] ?? '-1';
+    //           nums.add(int.parse(s));
+    //         }
+    //       });
+    //       if (fileInfo.gitDiffLineTracker.length > 0) {
+    //         int offset = fileInfo.idxOffset;
+    //         offset +=
+    //             fileInfo.gitDiffLineTracker[3] - fileInfo.gitDiffLineTracker[1];
+    //         fileInfo.idxOffset = offset;
+    //       }
+    //       fileInfo.gitDiffLineTracker = nums;
+    //       fileInfo.idx = 0;
+    //     } else {
+    //       int idx = fileInfo.idx;
+    //       if (text.startsWith(' ')) {
+    //         idx++;
+    //       }
+    //       if (text.startsWith('+')) {
+    //         int start = fileInfo.gitDiffLineTracker[0];
+    //         int editedLine = start;
+    //         editedLine += fileInfo.idx;
+    //         editedLine += fileInfo.idxOffset;
+    //         fileInfo.gitDiffEditLinesTracker.add(editedLine - 1);
+    //         idx++;
+    //         // print('line edited: ${start} ${editedLine} ${fileInfo.idx} ${fileInfo.idxOffset}');
+    //       }
+    //       fileInfo.idx = idx;
+    //     }
 
-        // previous
-        List<int> shouldClear = [];
-        for (final l in previousEdited) {
-          if (!fileInfo.gitDiffEditLinesTracker.contains(l)) {
-            shouldClear.add(l);
-          }
-        }
+    //     // previous
+    //     List<int> shouldClear = [];
+    //     for (final l in previousEdited) {
+    //       if (!fileInfo.gitDiffEditLinesTracker.contains(l)) {
+    //         shouldClear.add(l);
+    //       }
+    //     }
 
-        for (final l in shouldClear) {
-          Block? block = doc.doc.blockAtLine(l);
-          if (block != null) {
-            block.diff = '';
-            block.notify();
-          }
-        }
+    //     for (final l in shouldClear) {
+    //       Block? block = doc.doc.blockAtLine(l);
+    //       if (block != null) {
+    //         block.diff = '';
+    //         block.notify();
+    //       }
+    //     }
 
-        // print('$previousEdited ${fileInfo.gitDiffEditLinesTracker}');
+    //     // print('$previousEdited ${fileInfo.gitDiffEditLinesTracker}');
 
-        for (final l in fileInfo.gitDiffEditLinesTracker) {
-          Block? block = doc.doc.blockAtLine(l);
-          if (block != null) {
-            String diff = 'edited';
-            if (diff != block.diff) {
-              block.diff = diff;
-              block.notify();
-            }
-          }
-        }
-      }
-    });
+    //     for (final l in fileInfo.gitDiffEditLinesTracker) {
+    //       Block? block = doc.doc.blockAtLine(l);
+    //       if (block != null) {
+    //         String diff = 'edited';
+    //         if (diff != block.diff) {
+    //           block.diff = diff;
+    //           block.notify();
+    //         }
+    //       }
+    //     }
+    //   }
+    // });
   }
 
   void onShortcut(String keys) {

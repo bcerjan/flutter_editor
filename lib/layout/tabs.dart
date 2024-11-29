@@ -10,7 +10,6 @@ import 'package:editor/services/util.dart';
 import 'package:editor/services/ui/ui.dart';
 import 'package:editor/services/ui/menu.dart';
 import 'package:editor/services/ui/status.dart';
-import 'package:editor/services/ffi/bridge.dart';
 import 'package:editor/services/highlight/theme.dart';
 
 class TabIconButton extends StatelessWidget {
@@ -81,8 +80,9 @@ class _EditorTabBar extends State<EditorTabBar> {
       bool isFocused = doc.docPath == app.document?.docPath;
       if (isFocused) idx = tabs.length;
 
-      String iconPath = FFIBridge.iconForFileName(doc.fileName);
-      Widget fileIcon = FileIcon(path: iconPath, size: theme.uiFontSize + 2);
+      // String iconPath = FFIBridge.iconForFileName(doc.fileName);
+      Widget fileIcon =
+          FileIcon(path: '', size: theme.uiFontSize + 2); // TODO: Update path
 
       String title = doc.title.length > 0 ? doc.title : doc.fileName;
       tabs.add(Tab(

@@ -79,14 +79,12 @@ class BlockCaret {
 
 class BlockBracket {
   BlockBracket(
-      {Block? this.block,
-      int this.position = 0,
-      String this.bracket = '',
-      bool this.open = true});
+      {this.block, this.position = 0, this.bracket = '', this.open = true});
   int position = 0;
   Block? block;
   String bracket = '';
   bool open = true;
+  @override
   String toString() {
     return '$position: $bracket';
   }

@@ -1,15 +1,11 @@
-import 'dart:collection';
-import 'dart:ui' as ui;
-import 'dart:convert';
+import 'package:editor/services/highlight/fhl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 
 import 'package:editor/editor/cursor.dart';
 import 'package:editor/editor/block.dart';
 import 'package:editor/editor/document.dart';
-import 'package:editor/editor/view.dart';
 import 'package:editor/services/util.dart';
-import 'package:editor/services/ffi/bridge.dart';
 import 'package:editor/services/highlight/theme.dart';
 import 'package:editor/services/highlight/tmparser.dart';
 
@@ -38,8 +34,8 @@ class CustomWidgetSpan extends WidgetSpan {
 }
 
 class Highlighter {
-  HLEngine engine = TMParser();
-  // HLEngine engine = FlutterHighlight();
+  // HLEngine engine = TMParser(); // original, likely need to replace anyway
+  HLEngine engine = FlutterHighlight();
 
   TextSpan _textSpan(String text, TextStyle style,
       {Function? onTap, Block? block}) {

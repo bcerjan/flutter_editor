@@ -7,7 +7,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:path/path.dart' as _path;
 import 'package:editor/services/app.dart';
 import 'package:editor/services/util.dart';
-import 'package:editor/services/ffi/bridge.dart';
 import 'package:editor/services/ui/ui.dart';
 import 'package:editor/services/ui/menu.dart';
 import 'package:editor/services/ui/modal.dart';
@@ -20,11 +19,10 @@ import 'package:editor/services/explorer/sftp.dart';
 const int animateK = 55;
 
 class FileIcon extends StatefulWidget {
-  FileIcon({String this.path = '', double this.size = 20})
-      : super(key: ValueKey(path));
+  FileIcon({this.path = '', this.size = 20}) : super(key: ValueKey(path));
 
-  String path = '';
-  double size = 20;
+  final String path;
+  final double size;
 
   @override
   _FileIcon createState() => _FileIcon();
@@ -64,8 +62,7 @@ class ExplorerProvider extends ChangeNotifier implements ExplorerListener {
     rebuild();
   }
 
-  void onCreate(dynamic item) {
-  }
+  void onCreate(dynamic item) {}
 
   void onDelete(dynamic item) {
     rebuild();
@@ -79,7 +76,7 @@ class ExplorerProvider extends ChangeNotifier implements ExplorerListener {
   }
 
   void rebuild() async {
-    update_git_status();
+    // update_git_status();
 
     List<ExplorerItem?> _previous = [...tree];
     tree = explorer.tree();
@@ -135,67 +132,67 @@ class ExplorerProvider extends ChangeNotifier implements ExplorerListener {
     notifyListeners();
   }
 
-  void update_git_status() {
-    if (tree.length == 0) return;
+  // void update_git_status() {
+  //   if (tree.length == 0) return;
 
-    Completer<void> c = Completer<void>();
-    gitStatus = {};
+  //   Completer<void> c = Completer<void>();
+  //   gitStatus = {};
 
-    FFIMessaging.instance().sendMessage({
-      'channel': 'git',
-      'message': {'command': 'status', 'path': '${(tree[0]?.fullPath ?? '')}/'}
-    }).then((res) {
-      if (res == null) return;
+  //   FFIMessaging.instance().sendMessage({
+  //     'channel': 'git',
+  //     'message': {'command': 'status', 'path': '${(tree[0]?.fullPath ?? '')}/'}
+  //   }).then((res) {
+  //     if (res == null) return;
 
-      String status = '';
-      for (dynamic l in res['message']) {
-        if (l.contains('modified:')) {
-          status = 'modified';
-        }
-        if (l.contains('new file:')) {
-          status = 'new';
-        }
-        if (l.contains('deleted:')) {
-          status = 'deleted';
-        }
-        if (l.contains('Untracked files:')) {
-          status = 'untracked';
-          continue;
-        }
+  //     String status = '';
+  //     for (dynamic l in res['message']) {
+  //       if (l.contains('modified:')) {
+  //         status = 'modified';
+  //       }
+  //       if (l.contains('new file:')) {
+  //         status = 'new';
+  //       }
+  //       if (l.contains('deleted:')) {
+  //         status = 'deleted';
+  //       }
+  //       if (l.contains('Untracked files:')) {
+  //         status = 'untracked';
+  //         continue;
+  //       }
 
-        List<String> ss = l.split(':');
-        String s = '';
-        if (ss.length > 1) {
-          s = ss[1].trim();
-        }
+  //       List<String> ss = l.split(':');
+  //       String s = '';
+  //       if (ss.length > 1) {
+  //         s = ss[1].trim();
+  //       }
 
-        if (status == 'untracked') {
-          s = l.trim();
-        }
+  //       if (status == 'untracked') {
+  //         s = l.trim();
+  //       }
 
-        if (s == '') continue;
+  //       if (s == '') continue;
 
-        ExplorerItem? root = tree[0]?.rootItem()!;
-        s = _path.normalize(_path.join(root?.fullPath ?? '', s));
-        gitStatus[s] = status;
-        // print('$status $s');
-      }
+  //       ExplorerItem? root = tree[0]?.rootItem()!;
+  //       s = _path.normalize(_path.join(root?.fullPath ?? '', s));
+  //       gitStatus[s] = status;
+  //       // print('$status $s');
+  //     }
 
-      bool shouldNotify = false;
-      for (var i in tree) {
-        i?.extraData = i.extraData ?? {};
-        String? itemStatus = gitStatus[i?.fullPath ?? ''];
-        if (i?.extraData['status'] != itemStatus) {
-          i?.extraData['status'] = itemStatus;
-          shouldNotify = true;
-        }
-      }
+  //     bool shouldNotify = false;
+  //     for (var i in tree) {
+  //       i?.extraData = i.extraData ?? {};
+  //       String? itemStatus = gitStatus[i?.fullPath ?? ''];
+  //       if (i?.extraData['status'] != itemStatus) {
+  //         i?.extraData['status'] = itemStatus;
+  //         shouldNotify = true;
+  //       }
+  //     }
 
-      if (shouldNotify) {
-        notifyListeners();
-      }
-    });
-  }
+  //     if (shouldNotify) {
+  //       notifyListeners();
+  //     }
+  //   });
+  // }
 }
 
 class ExplorerTreeItem extends StatelessWidget {
@@ -253,7 +250,7 @@ class ExplorerTreeItem extends StatelessWidget {
     bool isFocused = item?.fullPath == app.document?.docPath;
     // TextStyle? _style = style?.copyWith(color: isFocused ? theme.foreground : theme.comment);
 
-    String iconPath = FFIBridge.iconForFileName(item?.fileName ?? '');
+    // String iconPath = FFIBridge.iconForFileName(item?.fileName ?? '');
     Widget? fileIcon;
 
     if (_item.isDirectory) {
@@ -262,7 +259,8 @@ class ExplorerTreeItem extends StatelessWidget {
     } else {
       fileIcon = Padding(
           padding: EdgeInsets.only(left: 0 * theme.uiFontSize / 2),
-          child: FileIcon(path: iconPath, size: theme.uiFontSize + 2));
+          child: FileIcon(
+              path: '', size: theme.uiFontSize + 2)); //TODO: update icon path
     }
 
     Widget button = InkWell(

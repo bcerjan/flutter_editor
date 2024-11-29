@@ -68,10 +68,11 @@ class FlutterHighlight extends HLEngine {
       }
     }
 
-    var continuation = prevBlock?.mode;
-    var result =
-        highlight.parse(text, language: 'cpp', continuation: continuation);
-    block?.mode = result.top;
+    // var continuation = prevBlock?.mode;
+    // var result =
+    //     highlight.parse(text, language: 'cpp', continuation: continuation);
+    // block?.mode = result.top;
+    final result = highlight.parse(text, language: 'cpp');
 
     b.className = result.top?.className ?? '';
     if (nextBlock != null) {

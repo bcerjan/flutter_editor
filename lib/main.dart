@@ -137,17 +137,17 @@ class App extends StatelessWidget {
         .light; // isDark(theme.background) ? Brightness.dark : Brightness.light;
 
     ThemeData themeData = ThemeData(
-      focusColor: Color.fromRGBO(0, 0, 0, 0.1),
+      focusColor: const Color.fromRGBO(0, 0, 0, 0.1),
       brightness: scheme,
       colorScheme: ColorScheme.fromSwatch(
         primarySwatch: toMaterialColor(theme.background),
         accentColor: toMaterialColor(theme.background),
         brightness: scheme,
+        backgroundColor: theme.background,
+        errorColor: Colors.red,
       ),
-      errorColor: Colors.red,
       primarySwatch: toMaterialColor(darken(theme.background, sidebarDarken)),
       primaryColor: theme.comment,
-      backgroundColor: theme.background,
       scaffoldBackgroundColor: theme.background,
       fontFamily: theme.uiFontFamily,
       //fontSize: theme.uiFontSize,

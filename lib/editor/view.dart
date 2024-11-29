@@ -141,7 +141,10 @@ class GutterLine extends StatelessWidget {
   Widget build(BuildContext context) {
     HLTheme theme = Provider.of<HLTheme>(context);
 
-    Color? diff = (block?.originalLineLength != block?.text.length) || block?.diff == 'edited' ? Colors.yellow : null;
+    Color? diff = (block?.originalLineLength != block?.text.length) ||
+            block?.diff == 'edited'
+        ? Colors.yellow
+        : null;
     if (block?.originalLine == -1) {
       diff = Colors.green;
     }
@@ -152,27 +155,25 @@ class GutterLine extends StatelessWidget {
         alignment: Alignment.centerRight,
         child: Text('$text', style: style),
         decoration: BoxDecoration(
-                color: (block?.carets ?? []).isNotEmpty
-                    ? colorCombine(theme.selection, theme.background, aw: 2, bw: 3)
-                    : theme.background,
-                border: diff != null ? Border(left: BorderSide(
-                    color: diff, width: 2
-                  )) : null
-                )
-      );
+            color: (block?.carets ?? []).isNotEmpty
+                ? colorCombine(theme.selection, theme.background, aw: 2, bw: 3)
+                : theme.background,
+            border: diff != null
+                ? Border(left: BorderSide(color: diff, width: 2))
+                : null));
   }
 }
 
 class ViewLine extends StatelessWidget {
   ViewLine({
-    Key? key,
-    Key? this.caretKey,
-    Block? this.block,
-    int this.line = 0,
-    double this.gutterWidth = 0,
-    TextStyle? this.gutterStyle,
-    double this.width = 0,
-    double this.height = 0,
+    key,
+    this.caretKey,
+    this.block,
+    this.line = 0,
+    this.gutterWidth = 0,
+    this.gutterStyle,
+    this.width = 0,
+    this.height = 0,
   }) : super(key: key);
 
   Key? caretKey;
@@ -185,8 +186,6 @@ class ViewLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int lineNumber = block?.line ?? 0;
-
     // print('rebuild $lineNumber');
     return ValueListenableBuilder(
       key: key,

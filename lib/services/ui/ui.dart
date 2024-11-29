@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:editor/services/app.dart';
 import 'package:editor/services/ui/menu.dart';
 
 class Popup {
   Popup({
-    Widget? this.widget,
-    bool this.isMenu = false,
+    required this.widget,
+    this.isMenu = false,
   });
   bool isMenu = false;
-  Widget? widget;
+  Widget widget;
 }
 
 class UIProvider extends ChangeNotifier {

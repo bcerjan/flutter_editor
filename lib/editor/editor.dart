@@ -11,7 +11,7 @@ import 'package:editor/editor/cursor.dart';
 import 'package:editor/editor/block.dart';
 import 'package:editor/editor/document.dart';
 import 'package:editor/editor/controller.dart';
-import 'package:editor/editor/view.dart';
+import 'package:editor/editor/view.dart' as view;
 import 'package:editor/editor/search.dart';
 import 'package:editor/editor/minimap.dart';
 import 'package:editor/services/app.dart';
@@ -95,7 +95,7 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
     });
     d.addListener('onSave', (documentId) {
       gitDiff();
-    });    
+    });
     d.addListener('onUndo', () {
       gitDiff();
     });
@@ -208,14 +208,14 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
       if (res == null) {
         return;
       }
-      
+
       List<int> previousEdited = <int>[...fileInfo.gitDiffEditLinesTracker];
       fileInfo.gitDiffLineTracker = <int>[];
       fileInfo.gitDiffEditLinesTracker = <int>[];
       fileInfo.idx = -1;
       fileInfo.idxOffset = 0;
 
-      for(final text in res['message']) {
+      for (final text in res['message']) {
         if (text.startsWith('@@')) {
           List<int> nums = <int>[];
           RegExp regExp =
@@ -228,40 +228,40 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
               nums.add(int.parse(s));
             }
           });
-            if (fileInfo.gitDiffLineTracker.length > 0) {
-              int offset = fileInfo.idxOffset;
-              offset += fileInfo.gitDiffLineTracker[3] -
-                  fileInfo.gitDiffLineTracker[1];
-              fileInfo.idxOffset = offset;
-            }
-            fileInfo.gitDiffLineTracker = nums;
-            fileInfo.idx = 0;
+          if (fileInfo.gitDiffLineTracker.length > 0) {
+            int offset = fileInfo.idxOffset;
+            offset +=
+                fileInfo.gitDiffLineTracker[3] - fileInfo.gitDiffLineTracker[1];
+            fileInfo.idxOffset = offset;
+          }
+          fileInfo.gitDiffLineTracker = nums;
+          fileInfo.idx = 0;
         } else {
-            int idx = fileInfo.idx;
-            if (text.startsWith(' ')) {
-              idx++;
-            }
-            if (text.startsWith('+')) {
-              int start = fileInfo.gitDiffLineTracker[0];
-              int editedLine = start;
-              editedLine += fileInfo.idx;
-              editedLine += fileInfo.idxOffset;
-              fileInfo.gitDiffEditLinesTracker.add(editedLine-1);
-              idx++;
-              // print('line edited: ${start} ${editedLine} ${fileInfo.idx} ${fileInfo.idxOffset}');
-            }
-            fileInfo.idx = idx;
+          int idx = fileInfo.idx;
+          if (text.startsWith(' ')) {
+            idx++;
+          }
+          if (text.startsWith('+')) {
+            int start = fileInfo.gitDiffLineTracker[0];
+            int editedLine = start;
+            editedLine += fileInfo.idx;
+            editedLine += fileInfo.idxOffset;
+            fileInfo.gitDiffEditLinesTracker.add(editedLine - 1);
+            idx++;
+            // print('line edited: ${start} ${editedLine} ${fileInfo.idx} ${fileInfo.idxOffset}');
+          }
+          fileInfo.idx = idx;
         }
 
         // previous
         List<int> shouldClear = [];
-        for(final l in previousEdited) {
+        for (final l in previousEdited) {
           if (!fileInfo.gitDiffEditLinesTracker.contains(l)) {
             shouldClear.add(l);
           }
         }
 
-        for(final l in shouldClear) {
+        for (final l in shouldClear) {
           Block? block = doc.doc.blockAtLine(l);
           if (block != null) {
             block.diff = '';
@@ -271,7 +271,7 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
 
         // print('$previousEdited ${fileInfo.gitDiffEditLinesTracker}');
 
-        for(final l in fileInfo.gitDiffEditLinesTracker) {
+        for (final l in fileInfo.gitDiffEditLinesTracker) {
           Block? block = doc.doc.blockAtLine(l);
           if (block != null) {
             String diff = 'edited';
@@ -282,7 +282,6 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
           }
         }
       }
-
     });
   }
 
@@ -530,7 +529,7 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
 
             Offset pos =
                 Offset(decor.caretPosition.dx, decor.caretPosition.dy + move);
-            Offset o = screenToCursor(obj, pos);
+            Offset o = view.screenToCursor(obj, pos);
             double dy = o.dy - curLine;
             if (dy * dy <= 1) {
               onTapDown(obj, pos);
@@ -619,7 +618,7 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
   }
 
   void onTapDown(RenderObject? obj, Offset globalPosition) {
-    Offset o = screenToCursor(obj, globalPosition);
+    Offset o = view.screenToCursor(obj, globalPosition);
     if (shifting) {
       command('shift+cursor', params: [o.dy.toInt(), o.dx.toInt()]);
     } else {
@@ -628,15 +627,13 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
   }
 
   void onDoubleTapDown(RenderObject? obj, Offset globalPosition) {
-    Document d = doc.doc;
-    Offset o = screenToCursor(obj, globalPosition);
+    Offset o = view.screenToCursor(obj, globalPosition);
     command('cursor', params: [o.dy.toInt(), o.dx.toInt()]);
     command('select_word');
   }
 
   void onPanUpdate(RenderObject? obj, Offset globalPosition) {
-    Document d = doc.doc;
-    Offset o = screenToCursor(obj, globalPosition);
+    Offset o = view.screenToCursor(obj, globalPosition);
     if (o.dx == -1 || o.dy == -1) return;
     command('shift+cursor', params: [o.dy.toInt(), o.dx.toInt()]);
   }
@@ -756,8 +753,8 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
                   Row(children: [
                     Expanded(
                         child: InputListener(
-                            child:
-                                View(key: PageStorageKey(doc.doc.documentId)),
+                            child: view.View(
+                                key: PageStorageKey(doc.doc.documentId)),
                             focusNode: focusNode,
                             textFocusNode: textFocusNode,
                             onKeyDown: onKeyDown,

@@ -38,16 +38,16 @@ dependencies:
   flutter_highlight: ^0.7.0
   ffi: ^1.1.2
   flutter_svg: ^1.0.0
-  archive: ^3.1.6
+  archive: ^3.6.1
   path_provider: ^2.0.8
   diff_match_patch: ^0.4.1
 
 dependency_overrides:
-  highlight:
-      git:
-        url: http://github.com/icedman/highlight.dart
-        ref: line-by-line-parsing
-        path: highlight
+  # highlight:
+  #     git:
+  #       url: http://github.com/icedman/highlight.dart
+  #       ref: line-by-line-parsing
+  #       path: highlight
 
 dev_dependencies:
   flutter_test:

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:editor/explorer/explorer.dart';
+import 'package:editor/layout/explorer.dart';
 import 'package:editor/services/ffi/bridge.dart';
 import 'package:editor/services/app.dart';
 import 'package:editor/services/highlight/theme.dart';
@@ -47,7 +47,7 @@ void main(List<String> args) async {
 }
 
 class App extends StatelessWidget {
-  App({String this.path = ''});
+  App({key, String this.path = ''});
 
   String path = '';
 
@@ -56,9 +56,11 @@ class App extends StatelessWidget {
     HLTheme theme = Provider.of<HLTheme>(context);
 
     ThemeData themeData = ThemeData(
+      colorScheme: ColorScheme.fromSwatch(
+        backgroundColor: theme.background,
+      ),
       fontFamily: 'FiraCode',
       primaryColor: theme.foreground,
-      backgroundColor: theme.background,
       scaffoldBackgroundColor: theme.background,
     );
 

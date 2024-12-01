@@ -15,7 +15,7 @@ RegExp _wordRegExp = new RegExp(
 );
 
 class IndexNode {
-  IndexNode({String this.text = '', int this.level = 0});
+  IndexNode({this.text = '', this.level = 0});
 
   int id = 0;
   int level = 0;

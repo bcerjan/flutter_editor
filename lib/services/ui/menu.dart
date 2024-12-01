@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
 import 'package:editor/services/app.dart';
-import 'package:editor/services/keybindings.dart';
 import 'package:editor/services/util.dart';
 import 'package:editor/services/ui/ui.dart';
 import 'package:editor/services/highlight/theme.dart';
@@ -19,14 +18,14 @@ class UIMenuData {
   Function? onSelect;
 
   void select(int index) {
-    if (index >= 0 && index < items.length && items[index] != null) {
-      onSelect?.call(items[index]);
+    if (index >= 0 && index < items.length) {
+      items[index].onSelect?.call(items[index]);
     }
   }
 
   void selectItem(UIMenuData? item) {
     if (item != null) {
-      onSelect?.call(item);
+      item.onSelect?.call(item);
     }
   }
 

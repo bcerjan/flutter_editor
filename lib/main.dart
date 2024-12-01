@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:editor/services/websocket/remote_provider.dart';
+import 'package:editor/services/websocket/websocket_connection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as _path;
@@ -13,7 +15,6 @@ import 'package:editor/services/indexer/filesearch.dart';
 import 'package:editor/services/ui/ui.dart';
 import 'package:editor/services/ui/status.dart';
 import 'package:editor/services/highlight/theme.dart';
-import 'package:editor/services/highlight/tmparser.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,10 +25,10 @@ void main(List<String> args) async {
   await app.initialize();
   await app.loadSettings();
 
-  String path = './';
-  if (args.isNotEmpty) {
-    path = args[0];
-  }
+  // String path = './';
+  // if (args.isNotEmpty) {
+  //   path = args[0];
+  // }
 
   HLTheme theme = HLTheme.instance();
   // TMParser()
@@ -37,43 +38,53 @@ void main(List<String> args) async {
   UIProvider ui = UIProvider();
   StatusProvider status = StatusProvider();
   FileSearchProvider fileSearch = FileSearchProvider();
+  RemoteProvider remote = RemoteProvider<WebsocketConnection>();
 
-  String dirPath = path;
-  if (!(await FileSystemEntity.isDirectory(path))) {
-    Document? doc = app.open(path);
+  // String dirPath = path;
+  // if (!(await FileSystemEntity.isDirectory(path))) {
+  //   Document? doc = app.open(path);
 
-    // FFIBridge.createDocument(doc?.documentId ?? 0, doc?.docPath ?? '');
+  //   // FFIBridge.createDocument(doc?.documentId ?? 0, doc?.docPath ?? '');
 
-    app.openSidebar = false;
-    dirPath = _path.dirname(path);
-  }
+  //   app.openSidebar = false;
+  //   dirPath = _path.dirname(path);
+  // }
 
-  ExplorerProvider explorer = ExplorerProvider();
+  ExplorerProvider explorer = ExplorerProvider<WebsocketConnection>();
+
+  /// Register our other objects so they are automatically updated when we
+  /// connect/disconnect from the server:
+  remote.addListener(() {
+    explorer.remoteChange(remote);
+    explorer.explorer.setRootPath(app.codeFolder);
+    // explorer.explorer.backend?.loadPath(app.codeFolder);
+    fileSearch.remoteChange(remote);
+  });
 
   // exclude patterns
   dynamic folderExclude = app.settings['folder_exclude_patterns'] ?? [];
   dynamic fileExclude = app.settings['file_exclude_patterns'] ?? [];
   dynamic binaryExclude = app.settings['binary_file_patterns'] ?? [];
-  fileSearch.setExcludePatterns(folderExclude, fileExclude, binaryExclude);
+  // fileSearch.setExcludePatterns(folderExclude, fileExclude, binaryExclude);
   explorer.explorer
       .setExcludePatterns(folderExclude, fileExclude, binaryExclude);
 
-  explorer.explorer.setRootPath(dirPath).then((files) {
-    explorer.explorer.root?.isExpanded = true;
-    // explorer.explorer.dump();
-    explorer.rebuild();
-    // explorer.explorer.backend?.preload();
-  });
+  // explorer.explorer.setRootPath(dirPath).then((files) {
+  //   explorer.explorer.root?.isExpanded = true;
+  //   // explorer.explorer.dump();
+  //   explorer.rebuild();
+  //   // explorer.explorer.backend?.preload();
+  // });
   // explorer.explorer.backend?.setRootPath(dirPath); // preloads 4 depths
 
-  explorer.onSelect = (item) {
-    if (!item.isDirectory) {
-      if (!app.fixedSidebar) {
-        app.openSidebar = false;
-      }
-      app.open(item.fullPath, focus: true);
-    }
-  };
+  // explorer.onSelect = (item) {
+  //   if (!item.isDirectory) {
+  //     if (!app.fixedSidebar) {
+  //       app.openSidebar = false;
+  //     }
+  //     app.open(item.fullPath, focus: true);
+  //   }
+  // };
 
   return runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (context) => app),
@@ -81,12 +92,13 @@ void main(List<String> args) async {
     ChangeNotifierProvider(create: (context) => theme),
     ChangeNotifierProvider(create: (context) => explorer),
     ChangeNotifierProvider(create: (context) => status),
-    Provider(create: (context) => fileSearch)
-  ], child: App()));
+    Provider(create: (context) => fileSearch),
+    ChangeNotifierProvider(create: (context) => remote),
+  ], child: const App()));
 }
 
 class App extends StatelessWidget {
-  App({this.focusNode});
+  const App({this.focusNode});
   final FocusNode? focusNode;
 
   @override
@@ -128,6 +140,9 @@ class App extends StatelessWidget {
     );
 
     return MaterialApp(
-        debugShowCheckedModeBanner: false, theme: themeData, home: TheApp());
+      debugShowCheckedModeBanner: false,
+      theme: themeData,
+      home: const TheApp(),
+    );
   }
 }

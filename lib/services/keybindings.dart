@@ -47,7 +47,7 @@ final Map<String, Command> _sublime = {
 };
 
 String buildKeys(String keys,
-    {bool control: false, bool shift: false, bool alt: false}) {
+    {bool control = false, bool shift = false, bool alt = false}) {
   String res = '';
 
   keys = keys.toLowerCase();

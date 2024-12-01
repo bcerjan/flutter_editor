@@ -1,5 +1,9 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:editor/services/ui/modal.dart';
+import 'package:editor/services/websocket/remote_provider.dart';
+import 'package:editor/services/websocket/websocket_connection.dart';
+import 'package:editor/widgets/error_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -56,11 +60,29 @@ class _EditorTabBar extends State<EditorTabBar> {
       RenderBox? box = obj as RenderBox;
       Offset position = box.localToGlobal(Offset(box.size.width, 0));
       UIProvider ui = Provider.of<UIProvider>(context, listen: false);
-      UIMenuData? menu = ui.menu('explorer::context');
+      UIMenuData? menu = ui.menu('explorer::context',
+          onSelect: (item) => item.onSelect?.call());
       menu?.items.clear();
       menu?.menuIndex = -1;
-      for (final s in ['New Folder', 'New File']) {
-        menu?.items.add(UIMenuData()..title = s);
+      //TODO: replace with enum / something better than this
+      for (final s in ['Connection', 'New Folder', 'New File']) {
+        if (s == 'Connection') {
+          menu?.items.add(
+            UIMenuData()
+              ..title = s
+              ..onSelect = (_) {
+                Future.delayed(
+                    const Duration(milliseconds: 50),
+                    () => ui.setPopup(
+                          const ConnectionModal(),
+                          shield: true,
+                          blur: true,
+                        ));
+              },
+          );
+        } else {
+          menu?.items.add(UIMenuData()..title = s);
+        }
       }
       ui.setPopup(
           UIMenuPopup(position: position, alignX: 0, alignY: 1, menu: menu),
@@ -194,5 +216,63 @@ class EditorTabs extends StatelessWidget {
     }
 
     return Row(children: views);
+  }
+}
+
+class ConnectionModal extends StatelessWidget {
+  const ConnectionModal({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    AppProvider app = Provider.of<AppProvider>(context, listen: false);
+    RemoteProvider remote = Provider.of<RemoteProvider>(context, listen: false);
+    UIProvider ui = Provider.of<UIProvider>(context, listen: false);
+
+    final bool connected = remote.connected;
+
+    final List<UITextInput> inputs = [
+      UITextInput(
+        label: 'Server Address',
+        text: app.serverAddress,
+        onChanged: (p0) => app.serverAddress = p0,
+        editable: !connected,
+      ),
+      UITextInput(
+        label: 'Code Folder',
+        text: app.codeFolder,
+        onChanged: (p0) => app.codeFolder = p0,
+        editable: !connected,
+      ),
+    ];
+    final List<UIButton> btns = [
+      UIButton(
+        text: connected ? 'Disconnect' : 'Connect',
+        onTap: () {
+          // Should update other provide'd values as they listen to this one
+          try {
+            if (!connected) {
+              remote.connect(
+                  WebsocketConnection()..connect(serverUrl: app.serverAddress));
+              Future.delayed(
+                  const Duration(milliseconds: 50), () => ui.clearPopups());
+            } else {
+              remote.disconnect();
+              Future.delayed(
+                  const Duration(milliseconds: 50), () => ui.clearPopups());
+            }
+          } catch (e, trace) {
+            print(trace);
+            UIProvider ui = Provider.of<UIProvider>(context, listen: false);
+            ui.setPopup(ErrorModal(text: e.toString()));
+          }
+        },
+      )
+    ];
+    return UIModal(
+      title: 'Connection Settings',
+      buttons: btns,
+      inputs: inputs,
+      width: 400,
+    );
   }
 }

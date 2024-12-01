@@ -61,7 +61,7 @@ MaterialColor toMaterialColor(Color clr) {
 
 Size getTextExtents(String text, TextStyle style,
     {double minWidth = 0,
-    double maxWidth: double.infinity,
+    double maxWidth = double.infinity,
     int? maxLines = 1}) {
   final TextPainter textPainter = TextPainter(
       text: TextSpan(text: text, style: style),

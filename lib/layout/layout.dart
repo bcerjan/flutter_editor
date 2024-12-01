@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:editor/services/websocket/remote_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -23,18 +24,19 @@ import 'package:editor/services/keybindings.dart';
 final int animteSidebarK = 250;
 
 class Resizer extends StatefulWidget {
-  Resizer(
-      {double? this.width,
-      double? this.height,
-      Function? this.onStart,
-      Function? this.onUpdate,
-      Function? this.onEnd});
+  const Resizer({
+    this.width,
+    this.height,
+    this.onStart,
+    this.onUpdate,
+    this.onEnd,
+  });
 
-  Function? onStart;
-  Function? onUpdate;
-  Function? onEnd;
-  double? width;
-  double? height;
+  final Function? onStart;
+  final Function? onUpdate;
+  final Function? onEnd;
+  final double? width;
+  final double? height;
 
   @override
   _Resizer createState() => _Resizer();
@@ -46,7 +48,7 @@ class _Resizer extends State<Resizer> {
   Size size = Size.zero;
 
   @override
-  Widget build(BuildContext) {
+  Widget build(BuildContext context) {
     return MouseRegion(
         cursor: SystemMouseCursors.resizeColumn,
         child: GestureDetector(
@@ -78,6 +80,8 @@ class _Resizer extends State<Resizer> {
 }
 
 class AppLayout extends StatefulWidget {
+  const AppLayout({super.key});
+
   @override
   _AppLayout createState() => _AppLayout();
 }
@@ -300,22 +304,21 @@ class _TheApp extends State<TheApp> with WidgetsBindingObserver {
       FileSearchProvider search =
           Provider.of<FileSearchProvider>(context, listen: false);
       search.onResult = (res) {
-        // search.onResult = null;
-        // if (res.length == 0) {
-        // resultDoc?.insertText('none found');
-        // }
         for (final r in res) {
           resultDoc?.moveCursorToEndOfDocument();
-          resultDoc?.insertText(r['file']);
-          for (final m in r['matches'] ?? []) {
-            resultDoc?.insertNewLine();
-            // resultDoc?.insertText('```js');
-            // resultDoc?.insertNewLine();
-            resultDoc?.insertText(m['text']);
-            resultDoc?.insertText(' [Ln ${m['lineNumber']}]');
-            // resultDoc?.insertNewLine();
-            // resultDoc?.insertText('```');
-          }
+          resultDoc?.insertText(r.path);
+          resultDoc?.insertNewLine();
+          resultDoc?.insertText(r.content);
+          resultDoc?.insertText(' [Ln ${r.lineNumber.toString()}]');
+          // for (final m in r['matches'] ?? []) {
+          //   resultDoc?.insertNewLine();
+          //   // resultDoc?.insertText('```js');
+          //   // resultDoc?.insertNewLine();
+          //   resultDoc?.insertText(m['text']);
+          //   resultDoc?.insertText(' [Ln ${m['lineNumber']}]');
+          //   // resultDoc?.insertNewLine();
+          //   // resultDoc?.insertText('```');
+          // }
           resultDoc?.insertNewLine();
           resultDoc?.insertNewLine();
         }

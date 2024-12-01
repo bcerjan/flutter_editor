@@ -1,5 +1,10 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:editor/services/explorer/remotefs.dart';
+import 'package:editor/services/websocket/models/server_class_defs/message_types.dart';
+import 'package:editor/services/websocket/remote_connection.dart';
+import 'package:editor/services/websocket/remote_provider.dart';
+import 'package:editor/services/websocket/websocket_connection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
@@ -41,7 +46,8 @@ class _FileIcon extends State<FileIcon> {
   }
 }
 
-class ExplorerProvider extends ChangeNotifier implements ExplorerListener {
+class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
+    implements ExplorerListener {
   late Explorer explorer;
 
   Map<String, String> gitStatus = {};
@@ -53,9 +59,31 @@ class ExplorerProvider extends ChangeNotifier implements ExplorerListener {
 
   ExplorerProvider() {
     explorer = Explorer();
-    explorer.setBackend(LocalFs());
+    // explorer.setBackend(LocalFs());
+    // explorer.setBackend(RemoteFs(wsConnection: wsConnection, msgStream: msgStream))
     // explorer.setBackend(SFtpFs());
+    // explorer.backend?.addListener(this);
+  }
+
+  void remoteChange(RemoteProvider<T> provider) {
+    if (provider.remote != null) {
+      initializeRemote(
+        wsConnection: provider.remote!,
+        msgStream: provider.remote!.messages!,
+      );
+    } else {
+      explorer.setBackend(null);
+    }
+  }
+
+  void initializeRemote({
+    required T wsConnection,
+    required Stream<ServerMessage> msgStream,
+  }) {
+    explorer
+        .setBackend(RemoteFs(wsConnection: wsConnection, msgStream: msgStream));
     explorer.backend?.addListener(this);
+    notifyListeners();
   }
 
   void onLoad(dynamic items) {
@@ -211,7 +239,7 @@ class ExplorerTreeItem extends StatelessWidget {
       RenderBox? box = obj as RenderBox;
       Offset position = box.localToGlobal(Offset(box.size.width, 0));
       UIProvider ui = Provider.of<UIProvider>(context, listen: false);
-      UIMenuData? menu = ui.menu('explorer::context', onSelect: (item) {
+      UIMenuData? menu = ui.menu('explorer::context', onSelect: (_) {
         Future.delayed(const Duration(milliseconds: 50), () {
           ui.setPopup(UIModal(message: 'Delete?'));
         });

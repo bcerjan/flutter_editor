@@ -12,16 +12,16 @@ import 'package:editor/services/ui/menu.dart';
 import 'package:editor/services/highlight/theme.dart';
 
 class UIPalettePopup extends StatefulWidget {
-  UIPalettePopup(
-      {Key? key,
-      double this.width = 300,
-      int this.visibleItems = 6,
-      UIMenuData? this.menu})
-      : super(key: key);
+  const UIPalettePopup({
+    Key? key,
+    this.width = 300,
+    this.visibleItems = 6,
+    this.menu,
+  }) : super(key: key);
 
-  double width = 220;
-  int visibleItems = 6;
-  UIMenuData? menu;
+  final double width;
+  final int visibleItems;
+  final UIMenuData? menu;
 
   @override
   _UIPalettePopup createState() => _UIPalettePopup();

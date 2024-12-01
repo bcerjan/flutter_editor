@@ -19,7 +19,7 @@ class UIProvider extends ChangeNotifier {
   int menuIndex = 0;
   Function? onClearPopups;
 
-  UIMenuData? menu(String id, {Function? onSelect}) {
+  UIMenuData? menu(String id, {void Function(UIMenuData)? onSelect}) {
     menus[id] = menus[id] ?? UIMenuData();
     menus[id]?.onSelect = onSelect ?? menus[id]?.onSelect;
     return menus[id];
@@ -29,6 +29,7 @@ class UIProvider extends ChangeNotifier {
     return popups.isNotEmpty;
   }
 
+  /// Blur = background blur. Shield = if clicking off the modal should close it
   void setPopup(Widget widget,
       {bool blur = false, bool shield = false, Function? onClearPopups}) {
     this.onClearPopups = null;

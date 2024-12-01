@@ -71,6 +71,8 @@ class AppProvider extends ChangeNotifier {
   bool showGutter = true;
   bool softWrap = true;
   String themePath = '';
+  String serverAddress = 'ws://127.0.0.1:8080';
+  String codeFolder = '.';
 
   // state
   double bottomInset = 0;
@@ -135,7 +137,7 @@ class AppProvider extends ChangeNotifier {
       }
       document = d;
     }
-    if (document == null && documents.length > 0) {
+    if (document == null && documents.isNotEmpty) {
       document = documents[0];
     }
     notifyListeners();
@@ -244,6 +246,8 @@ class AppProvider extends ChangeNotifier {
     showMinimap = settings['minimap'] == true;
     showGutter = settings['gutter'] == true;
     sidebarWidth = settings['sidebar_width'] ?? sidebarWidth;
+    serverAddress = settings['server_address'] ?? 'ws://127.0.0.1:8080';
+    codeFolder = settings['code_folder'] ?? '.';
   }
 
   void saveSettings() async {
@@ -252,6 +256,8 @@ class AppProvider extends ChangeNotifier {
     settings['minimap'] = showMinimap;
     settings['gutter'] = showGutter;
     settings['sidebar_width'] = sidebarWidth;
+    settings['server_adress'] = serverAddress;
+    settings['code_folder'] = codeFolder;
     String configRaw = jsonEncode(settings);
 
     File configFile = File(expandPath('$appResourceRoot/config.json'));

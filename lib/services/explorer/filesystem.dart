@@ -192,7 +192,7 @@ class Explorer implements ExplorerListener {
     return root?.itemFromPath(p);
   }
 
-  Future<bool> deleteDirectory(String path, {bool recursive: false}) {
+  Future<bool> deleteDirectory(String path, {bool recursive = false}) {
     String p = _path.normalize(Directory(path).absolute.path);
     if (isLoading(p)) {
       _busy();
@@ -264,12 +264,19 @@ class Explorer implements ExplorerListener {
   }
 
   // event
+  /// Requires json that contains: 'path' and 'items': [{'path' : ... ,
+  ///   'isDirectory': ... , 'items': [] }] as a raw string, not a map
   void onLoad(dynamic items) {
+    print('in filesystem onLoad: $items');
     dynamic json = jsonDecode(items);
+    print(json);
     String p = _path.normalize(Directory(json['path']).absolute.path);
+    print(p);
     ExplorerItem? item = itemFromPath(p);
+    print(item);
 
     bool didUpdate = item?.setData(json) ?? false;
+    print(didUpdate);
     item?.isDirectory = true;
     if (requests.containsKey(p)) {
       requests[p]?.complete(didUpdate);
@@ -277,8 +284,7 @@ class Explorer implements ExplorerListener {
     }
   }
 
-  void onCreate(dynamic item) {
-  }
+  void onCreate(dynamic item) {}
 
   void onDelete(dynamic item) {
     dynamic json = jsonDecode(item);

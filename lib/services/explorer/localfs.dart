@@ -23,7 +23,7 @@ class LocalFs extends ExplorerBackend {
     return (path.length - ll.length);
   }
 
-  void _loadPath(String path, {bool recursive: false}) {
+  void _loadPath(String path, {bool recursive = false}) {
     files = <FileSystemEntity>[];
     Directory dir = Directory(path);
     int depthRoot = _depth(dir.absolute.path);

@@ -95,7 +95,7 @@ class Document {
     return cursors[0];
   }
 
-  List<Cursor> cursorsSorted({bool inverse: false}) {
+  List<Cursor> cursorsSorted({bool inverse = false}) {
     List<Cursor> curs = [...cursors];
     curs.sort((a, b) {
       int aLine = a.block?.line ?? 0;
@@ -539,7 +539,7 @@ class Document {
     return false;
   }
 
-  BlockBracket brackedUnderCursor(Cursor cursor, {bool openOnly: false}) {
+  BlockBracket brackedUnderCursor(Cursor cursor, {bool openOnly = false}) {
     BlockBracket lastBracket = BlockBracket();
     List<BlockBracket> brackets = cursor.block?.brackets ?? [];
     for (final b in brackets) {

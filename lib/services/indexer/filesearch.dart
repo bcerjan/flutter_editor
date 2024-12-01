@@ -2,7 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'package:editor/services/indexer/levenshtein.dart';
+import 'package:editor/services/websocket/models/server_class_defs/message_types.dart';
+import 'package:editor/services/websocket/models/server_class_defs/search_result_item.dart';
+import 'package:editor/services/websocket/remote_connection.dart';
+import 'package:editor/services/websocket/remote_provider.dart';
+import 'package:editor/services/websocket/websocket_connection.dart';
 import 'package:path/path.dart' as _path;
 
 const int MAX_FILES_SEARCHED_COUNT = 2000;
@@ -318,4 +322,95 @@ class FileSearchIsolate {
   }
 }
 
-class FileSearchProvider extends FileSearchIsolate {}
+class WebSocketSearch<T extends RemoteConnection> {
+  WebSocketSearch({
+    this.wsConnection,
+    this.msgStream,
+    this.onResult,
+    this.onDone,
+  });
+  T? wsConnection;
+
+  /// Note: needs to be a broadcast stream to correctly handle sub-functions
+  /// connecting/disconnecting from it
+  Stream<ServerMessage>? msgStream;
+
+  /// Always returns a list, even for a single result
+  Function(List<SearchResultItem>)? onResult;
+  Function()? onDone;
+
+  /// This is what is called in the [RemoteProvider]'s listen callback to detect
+  /// connection/disconnection events
+  void remoteChange(RemoteProvider<T> provider) {
+    if (provider.remote != null) {
+      wsConnection = provider.remote;
+      msgStream = provider.remote!.messages;
+    } else {
+      wsConnection = null;
+      msgStream = null;
+    }
+  }
+
+  void initializeRemote({
+    required T wsConnection,
+    required Stream<ServerMessage> msgStream,
+  }) {
+    this.wsConnection = wsConnection;
+    this.msgStream = msgStream;
+  }
+
+  void find(String text,
+      {String path = '', bool caseSensitive = false, bool regex = false}) {
+    if (wsConnection != null && msgStream != null) {
+      wsConnection!.search(search: text, searchContent: true);
+      final results = msgStream!
+          .where((msg) => msg.type == ServerMessageType.searchResults);
+
+      // Might need to do it like this so that we can cancel when appropriate
+      StreamSubscription sub = results.listen(null);
+      sub.onData((msg) {
+        if (onResult != null) {
+          onResult!((msg.content['items'] as List<Map<String, dynamic>>)
+              .map((e) => SearchResultItemMapper.fromMap(e))
+              .toList());
+        }
+
+        if (msg.content['is_complete']) {
+          if (onDone != null) {
+            onDone!();
+          }
+          sub.cancel();
+        }
+      });
+    }
+    // return results.fold<List<SearchResultItem>>([], (list, msg) {
+    //   list.addAll((msg.content['items'] as List<Map<String, dynamic>>)
+    //       .map((e) => SearchResultItemMapper.fromMap(e))
+    //       .toList());
+    //   if (onResult != null) {
+    //     onResult!(list);
+    //   }
+
+    //   return list;
+    // });
+    // results.forEach((msg) async {
+    //   final List<SearchResultItem> items =
+    //       (msg.content['items'] as List<Map<String, dynamic>>)
+    //           .map((e) => SearchResultItemMapper.fromMap(e))
+    //           .toList();
+    //   final List<String> ret = [];
+    //   for (final i in items) {
+    //     ret.add(i.content);
+    //   }
+    //   yield ret;
+    // });
+  }
+}
+
+// class FileSearchProvider extends FileSearchIsolate {}
+class FileSearchProvider extends WebSocketSearch {
+  FileSearchProvider({
+    super.msgStream,
+    super.wsConnection,
+  });
+}

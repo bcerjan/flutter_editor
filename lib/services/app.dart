@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:archive/archive.dart';
+import 'package:editor/services/websocket/remote_connection.dart';
+import 'package:editor/services/websocket/remote_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as _path;
@@ -72,7 +74,7 @@ class AppProvider extends ChangeNotifier {
   bool softWrap = true;
   String themePath = '';
   String serverAddress = 'ws://127.0.0.1:8080';
-  String codeFolder = '.';
+  String codeFolder = r'D:\CerjanComputing\Projects\WIDE-UI\test_code';
 
   // state
   double bottomInset = 0;
@@ -93,6 +95,15 @@ class AppProvider extends ChangeNotifier {
     root = await getApplicationDocumentsDirectory();
     extensionsPath = expandPath('$appResourceRoot/extensions') + '/';
     keybindings = Keybindings();
+  }
+
+  void remoteChange(RemoteProvider remote) {
+    if (!remote.connected) {
+      // We disconnected:
+      documents.clear();
+      document = null;
+      notifyListeners();
+    }
   }
 
   Document? open(String path, {bool focus = false, int scrollTo = -1}) {

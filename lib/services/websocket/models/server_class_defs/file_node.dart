@@ -62,6 +62,11 @@ class FileNode with FileNodeMappable {
     );
   }
 
+  @override
+  String toString() {
+    return 'FileNode with path: ${path.toFilePath()}, isDir: $isDirectory';
+  }
+
   /// Convert to format expected by filesystem classes:
   String toFSJSON() {
     return json.encode({

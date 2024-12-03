@@ -56,9 +56,15 @@ void main(List<String> args) async {
   /// connect/disconnect from the server:
   remote.addListener(() {
     explorer.remoteChange(remote);
-    explorer.explorer.setRootPath(app.codeFolder);
+    if (explorer.explorer.backend != null) {
+      explorer.explorer.setRootPath(app.codeFolder).then((_) {
+        explorer.explorer.root?.isExpanded = true;
+        explorer.rebuild();
+      });
+    }
     // explorer.explorer.backend?.loadPath(app.codeFolder);
     fileSearch.remoteChange(remote);
+    app.remoteChange(remote);
   });
 
   // exclude patterns
@@ -77,14 +83,16 @@ void main(List<String> args) async {
   // });
   // explorer.explorer.backend?.setRootPath(dirPath); // preloads 4 depths
 
-  // explorer.onSelect = (item) {
-  //   if (!item.isDirectory) {
-  //     if (!app.fixedSidebar) {
-  //       app.openSidebar = false;
-  //     }
-  //     app.open(item.fullPath, focus: true);
-  //   }
-  // };
+  explorer.onSelect = (item) {
+    if (item != null) {
+      if (!item.isDirectory) {
+        if (!app.fixedSidebar) {
+          app.openSidebar = false;
+        }
+        app.open(item.fullPath, focus: true);
+      }
+    }
+  };
 
   return runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (context) => app),

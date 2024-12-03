@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'package:editor/services/websocket/models/server_class_defs/message_types.dart';
+import 'package:editor/services/websocket/remote_connection.dart';
+import 'package:editor/services/websocket/remote_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as _path;
@@ -87,8 +90,34 @@ class CodeEditingController extends ChangeNotifier {
   Offset offsetForCaret = Offset.zero;
   Size scrollAreaSize = Size.zero;
 
-  Future<bool> openFile(String path) async {
-    doc.openFile(path).then((r) {
+  // Remote communication for opening/closing files:
+  RemoteConnection? connection;
+  Stream<ServerMessage>? msgStream;
+
+  void configureRemote(RemoteProvider remote) {
+    if (remote.connected) {
+      connection = remote.remote;
+      msgStream = remote.remote!.messages;
+    } else {
+      connection = null;
+      msgStream = null;
+    }
+  }
+
+  // Future<bool> openFile(String path) async {
+  //   doc.openFile(path).then((r) {
+  //     ready = true;
+  //     notifyListeners();
+  //   });
+  //   return true;
+  // }
+
+  bool openFile(String path) {
+    connection!.openFile(path: _path.toUri(path));
+    msgStream!
+        .firstWhere((msg) => msg.type == ServerMessageType.documentContent)
+        .then((msg) {
+      doc.openFile(msg);
       ready = true;
       notifyListeners();
     });
@@ -98,6 +127,11 @@ class CodeEditingController extends ChangeNotifier {
   void touch() {
     print('warning.. minimize use of this');
     notifyListeners();
+  }
+
+  void sendChanges(Document original) {
+    connection!.changeFile(document: doc, changes: doc.getDiffList(original));
+    doc.version++;
   }
 
   void _makeDirty() {
@@ -129,10 +163,13 @@ class CodeEditingController extends ChangeNotifier {
   void command(String cmd,
       {dynamic params, List<Block>? modifiedBlocks}) async {
     Document d = doc;
+    Document original = Document();
+    original.blocks = List.from(d.blocks, growable: false);
     Cursor cursor = d.cursor().copy();
 
     bool doScroll = false;
     bool didInputText = false;
+    bool updatedText = false;
 
     switch (cmd) {
       case 'cancel':
@@ -145,6 +182,7 @@ class CodeEditingController extends ChangeNotifier {
         doScroll = true;
         d.begin();
         touch();
+        updatedText = true;
         break;
 
       case 'redo':
@@ -152,6 +190,7 @@ class CodeEditingController extends ChangeNotifier {
         doScroll = true;
         d.begin();
         touch();
+        updatedText = true;
         break;
 
       case 'insert':
@@ -164,6 +203,7 @@ class CodeEditingController extends ChangeNotifier {
         d.deleteSelectedText();
         d.insertNewLine();
         doScroll = true;
+        updatedText = true;
         break;
 
       case 'backspace':
@@ -173,6 +213,7 @@ class CodeEditingController extends ChangeNotifier {
           d.backspace();
         }
         doScroll = true;
+        updatedText = true;
         break;
       case 'delete':
         if (d.cursor().hasSelection()) {
@@ -181,6 +222,7 @@ class CodeEditingController extends ChangeNotifier {
           d.deleteText();
         }
         doScroll = true;
+        updatedText = true;
         break;
 
       case 'cursor':
@@ -308,6 +350,7 @@ class CodeEditingController extends ChangeNotifier {
       case 'tab':
         d.insertText(d.tabString);
         doScroll = true;
+        updatedText = true;
         break;
 
       case 'toggle_comment':
@@ -324,10 +367,12 @@ class CodeEditingController extends ChangeNotifier {
 
       case 'selection_to_lower_case':
         d.selectionToLowerCase();
+        updatedText = true;
         break;
 
       case 'selection_to_upper_case':
         d.selectionToUpperCase();
+        updatedText = true;
         break;
 
       case 'copy':
@@ -345,6 +390,7 @@ class CodeEditingController extends ChangeNotifier {
           Clipboard.setData(ClipboardData(text: d.selectedText()));
           d.deleteSelectedText();
           doScroll = true;
+          updatedText = true;
           break;
         }
       case 'paste':
@@ -423,6 +469,7 @@ class CodeEditingController extends ChangeNotifier {
             ..anchorColumn = cur.column;
         }
         doScroll = true;
+        updatedText = true;
         break;
 
       default:
@@ -474,6 +521,10 @@ class CodeEditingController extends ChangeNotifier {
           modifiedBlocks.add(a.block!);
         }
       }
+    }
+
+    if (didInputText || updatedText) {
+      sendChanges(original);
     }
 
     if (doScroll) {

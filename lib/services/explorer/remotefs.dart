@@ -14,7 +14,7 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend {
     this.msgStream,
   });
   List<ExplorerListener> listeners = [];
-  List<FileSystemEntity> files = [];
+  // List<FileSystemEntity> files = [];
   String rootPath = '';
   T? wsConnection;
 
@@ -39,8 +39,6 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend {
 
   @override
   void setRootPath(String path) {
-    checkConnection();
-    wsConnection!.getDirectory(path: _path.toUri(path));
     rootPath = _path.normalize(path);
   }
 
@@ -70,27 +68,19 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend {
   /// TODO: check if this works correctly with empty directories
   void loadPath(String path) async {
     checkConnection();
+    wsConnection!.getDirectory(path: _path.toUri(path));
     final ServerMessage msg = await msgStream!
-        .asBroadcastStream()
         .firstWhere((msg) => msg.type == ServerMessageType.directoryContent);
 
-    files.clear();
-
+    // files.clear();
     final newTree = FileNode.fromServerDirectory(
       rootPath: msg.content['path'] ?? rootPath,
       jsonList: msg.content['content'],
     );
 
-    if (newTree.children == null) {
-      // no children in this location, just parent folder
-      return;
-    }
-
     for (final l in listeners) {
-      for (final k in newTree.children!) {
-        final json = k.toFSJSON();
-        l.onLoad(json);
-      }
+      final json = newTree.toFSJSON();
+      l.onLoad(json);
     }
   }
 

@@ -110,7 +110,7 @@ class _EditorTabBar extends State<EditorTabBar> {
       tabs.add(Tab(
           key: ValueKey(doc.documentId),
           child: Padding(
-              padding: EdgeInsets.only(left: 10, right: 0),
+              padding: const EdgeInsets.only(left: 10, right: 0),
               child: Row(children: [
                 fileIcon,
                 Text(' $title',
@@ -134,9 +134,9 @@ class _EditorTabBar extends State<EditorTabBar> {
     }
 
     // update tab index
-    if (DefaultTabController.of(context)?.index != idx || tabs.length == 0) {
+    if (DefaultTabController.of(context).index != idx || tabs.isEmpty) {
       Future.delayed(const Duration(milliseconds: 100), () {
-        DefaultTabController.of(context)?.index = idx;
+        DefaultTabController.of(context).index = idx;
         StatusProvider status =
             Provider.of<StatusProvider>(context, listen: false);
         status.setIndexedStatus(0, '');
@@ -227,6 +227,8 @@ class ConnectionModal extends StatelessWidget {
     AppProvider app = Provider.of<AppProvider>(context, listen: false);
     RemoteProvider remote = Provider.of<RemoteProvider>(context, listen: false);
     UIProvider ui = Provider.of<UIProvider>(context, listen: false);
+    ExplorerProvider explporer =
+        Provider.of<ExplorerProvider>(context, listen: false);
 
     final bool connected = remote.connected;
 

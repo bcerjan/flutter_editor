@@ -2,6 +2,10 @@ import 'dart:io';
 import 'dart:ui';
 import 'dart:async';
 import 'dart:convert';
+import 'package:diff_match_patch/diff_match_patch.dart';
+import 'package:editor/services/websocket/models/server_class_defs/diff_change.dart';
+import 'package:editor/services/websocket/models/server_class_defs/document_metadata.dart';
+import 'package:editor/services/websocket/models/server_class_defs/message_types.dart';
 import 'package:path/path.dart' as _path;
 
 import 'package:editor/editor/cursor.dart';
@@ -17,6 +21,8 @@ class Document {
   String title = '';
   int documentId = 0;
   int langId = 0;
+  int version = 0;
+  DocumentMetadata metadata = const DocumentMetadata.getDefault();
 
   bool get largeDoc => (blocks.length > 10000);
   late Notifier notifier;
@@ -134,35 +140,65 @@ class Document {
     return 0;
   }
 
-  Future<bool> openFile(String path) async {
+  /// Expects connection to be handled externally, and we just pass the
+  /// server message with content here
+  Future<bool> openFile(ServerMessage msg) async {
+    // clear();
+    // docPath = _path.normalize(Directory(path).absolute.path);
+    // fileName = _path.basename(path);
+    // detectedTabSpaces = 0;
+
+    // blocks = [];
+    // File f = File(docPath);
+    // try {
+    //   await f
+    //       .openRead()
+    //       .map(utf8.decode)
+    //       .transform(const LineSplitter())
+    //       .forEach((l) {
+    //     Block block = Block(l, document: this);
+    //     block.originalLine = blocks.length;
+    //     block.originalLineLength = block.text.length;
+    //     // block.originalText = l;
+    //     if (blocks.length < 100) {
+    //       int c = countIndentSize(l);
+    //       if (c > 0 && (c < detectedTabSpaces || detectedTabSpaces == 0)) {
+    //         detectedTabSpaces = c;
+    //       }
+    //     }
+
+    //     blocks.add(block);
+    //   });
+    // } catch (err, msg) {
+    //   //
+    // }
+
     clear();
-    docPath = _path.normalize(Directory(path).absolute.path);
-    fileName = _path.basename(path);
+
+    final uri = Uri.file(msg.content['path']);
+    docPath = _path.fromUri(uri);
+    fileName = _path.basename(docPath);
     detectedTabSpaces = 0;
 
-    blocks = [];
-    File f = File(docPath);
-    try {
-      await f
-          .openRead()
-          .map(utf8.decode)
-          .transform(const LineSplitter())
-          .forEach((l) {
-        Block block = Block(l, document: this);
-        block.originalLine = blocks.length;
-        block.originalLineLength = block.text.length;
-        // block.originalText = l;
-        if (blocks.length < 100) {
-          int c = countIndentSize(l);
-          if (c > 0 && (c < detectedTabSpaces || detectedTabSpaces == 0)) {
-            detectedTabSpaces = c;
-          }
-        }
+    version = (msg.content['version'] as int) + 1;
 
-        blocks.add(block);
-      });
-    } catch (err, msg) {
-      //
+    metadata = DocumentMetadataMapper.fromMap(msg.content['metadata']);
+
+    blocks = [];
+
+    final String body = msg.content['content'];
+    final List<String> lines = const LineSplitter().convert(body);
+    for (final l in lines) {
+      Block block = Block(l, document: this);
+      block.originalLine = blocks.length;
+      block.originalLineLength = block.text.length;
+      if (blocks.length < 100) {
+        int c = countIndentSize(l);
+        if (c > 0 && (c < detectedTabSpaces || detectedTabSpaces == 0)) {
+          detectedTabSpaces = c;
+        }
+      }
+      blocks.add(block);
     }
 
     if (detectedTabSpaces > 0) {
@@ -792,5 +828,23 @@ class Document {
       l = 1;
     }
     return l;
+  }
+
+  String getRawText() {
+    final String separator = metadata.lineEnding.getStringEnding();
+    if (blocks.isEmpty) return '';
+    if (blocks.length > 1) {
+      return blocks.sublist(1).fold(
+          blocks.first.text, (prev, next) => '$prev$separator${next.text}');
+    } else {
+      return blocks.first.text;
+    }
+  }
+
+  /// Returns diff changes from old to new
+  List<DiffChange> getDiffList(Document old) {
+    // final diff = DiffMatchPatch().diff(old.getRawText(), getRawText());
+    final diff = DiffMatchPatch().diff(getRawText(), old.getRawText());
+    return diff.map((d) => DiffChange.fromDiff(diff: d)).toList();
   }
 }

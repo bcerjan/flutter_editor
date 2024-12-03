@@ -55,7 +55,7 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
   ExplorerItem? selected;
   bool animate = false;
 
-  Function? onSelect;
+  Function(ExplorerItem?)? onSelect;
 
   ExplorerProvider() {
     explorer = Explorer();
@@ -67,12 +67,16 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
 
   void remoteChange(RemoteProvider<T> provider) {
     if (provider.remote != null) {
+      // notifies internally
       initializeRemote(
         wsConnection: provider.remote!,
         msgStream: provider.remote!.messages!,
       );
     } else {
       explorer.setBackend(null);
+      tree = [];
+      explorer.root = null;
+      rebuild();
     }
   }
 
@@ -100,7 +104,7 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
 
   void select(ExplorerItem? item) {
     selected = item;
-    onSelect?.call(item);
+    onSelect?.call(item); // typically app.open
   }
 
   void rebuild() async {
@@ -224,14 +228,16 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
 }
 
 class ExplorerTreeItem extends StatelessWidget {
-  ExplorerTreeItem(
-      {ExplorerItem? this.item,
-      ExplorerProvider? this.provider,
-      TextStyle? this.style});
+  const ExplorerTreeItem({
+    super.key,
+    this.item,
+    this.provider,
+    this.style,
+  });
 
-  ExplorerItem? item;
-  ExplorerProvider? provider;
-  TextStyle? style;
+  final ExplorerItem? item;
+  final ExplorerProvider? provider;
+  final TextStyle? style;
 
   void showContextMenu(BuildContext context) {
     RenderObject? obj = context.findRenderObject();
@@ -276,7 +282,8 @@ class ExplorerTreeItem extends StatelessWidget {
         : Container(width: size);
 
     bool isFocused = item?.fullPath == app.document?.docPath;
-    // TextStyle? _style = style?.copyWith(color: isFocused ? theme.foreground : theme.comment);
+    TextStyle? _style =
+        style?.copyWith(color: isFocused ? theme.foreground : theme.comment);
 
     // String iconPath = FFIBridge.iconForFileName(item?.fileName ?? '');
     Widget? fileIcon;
@@ -311,7 +318,7 @@ class ExplorerTreeItem extends StatelessWidget {
                           fileIcon,
                           Text(
                             ' ${_item.fileName}',
-                            style: style,
+                            style: _style,
                             maxLines: 1,
                           ),
                         ]))))),

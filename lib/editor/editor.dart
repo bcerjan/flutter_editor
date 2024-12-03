@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:editor/services/ui/status.dart';
+import 'package:editor/services/websocket/remote_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -66,6 +67,8 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
     highlighter = Highlighter();
     indexer = IndexerIsolate();
     doc = DocumentProvider();
+    final remote = Provider.of<RemoteProvider>(context, listen: false);
+    doc.configureRemote(remote);
 
     if (widget.document != null) {
       doc.doc = widget.document ?? doc.doc;

@@ -89,8 +89,8 @@ class ExplorerItem {
 
     List<ExplorerItem?> added = [];
     List<ExplorerItem?> removed = [];
-
-    for (var item in items['items']) {
+    for (var temp in items['items']) {
+      Map<String, dynamic> item = json.decode(temp);
       String path = item['path'] ?? '';
       if (path == '') continue;
       if (path.startsWith('.')) {
@@ -118,8 +118,9 @@ class ExplorerItem {
     for (final c in children) {
       bool found = false;
       String cp = c?.fullPath ?? '';
-      for (final item in items['items']) {
-        String ip = item?['path'];
+      for (final temp in items['items']) {
+        Map<String, dynamic> item = json.decode(temp);
+        String ip = item['path'];
         if (cp == ip) {
           found = true;
           break;
@@ -266,17 +267,13 @@ class Explorer implements ExplorerListener {
   // event
   /// Requires json that contains: 'path' and 'items': [{'path' : ... ,
   ///   'isDirectory': ... , 'items': [] }] as a raw string, not a map
+  @override
   void onLoad(dynamic items) {
-    print('in filesystem onLoad: $items');
     dynamic json = jsonDecode(items);
-    print(json);
     String p = _path.normalize(Directory(json['path']).absolute.path);
-    print(p);
     ExplorerItem? item = itemFromPath(p);
-    print(item);
 
     bool didUpdate = item?.setData(json) ?? false;
-    print(didUpdate);
     item?.isDirectory = true;
     if (requests.containsKey(p)) {
       requests[p]?.complete(didUpdate);

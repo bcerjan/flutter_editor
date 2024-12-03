@@ -47,7 +47,7 @@ class ClientMessage extends Message with ClientMessageMappable {
     return {
       'document': {
         'uri': document.docPath,
-        'version': document.documentId,
+        'version': document.version,
       }
     };
   }

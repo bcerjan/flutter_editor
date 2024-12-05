@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:dart_mappable/dart_mappable.dart';
+import 'package:editor/services/explorer/filesystem.dart';
+import 'package:path/path.dart' as _path;
 import 'package:flutter/foundation.dart';
 import './comm_exceptions.dart';
 
@@ -74,6 +76,19 @@ class FileNode with FileNodeMappable {
       'isDirectory': isDirectory,
       'items': children?.map((i) => i.toFSJSON()).toList() ?? [],
     });
+  }
+
+  /// Converts the path of this node and all children to be relative to the
+  /// provided path
+  FileNode convertToRelativePath(String root) {
+    final List<FileNode> children = [];
+    for (final c in this.children ?? []) {
+      children.add(c.convertToRelativePath(root));
+    }
+    return copyWith(
+      children: children,
+      path: _path.toUri(_path.relative(path.toFilePath(), from: root)),
+    );
   }
 
   /// Attempts to (re)populate the tree at the appropriate child node down the

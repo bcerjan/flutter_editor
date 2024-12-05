@@ -31,6 +31,8 @@ class ClientMessageTypeMapper extends EnumMapper<ClientMessageType> {
         return ClientMessageType.closeFile;
       case 'GetDirectory':
         return ClientMessageType.getDirectory;
+      case 'GetWorkingDirectory':
+        return ClientMessageType.getWorkingDirectory;
       case 'RefreshDirectory':
         return ClientMessageType.refreshDirectory;
       case 'ChangeFile':
@@ -51,6 +53,12 @@ class ClientMessageTypeMapper extends EnumMapper<ClientMessageType> {
         return ClientMessageType.writeTerminal;
       case 'CloseTerminal':
         return ClientMessageType.closeTerminal;
+      case 'CreateFile':
+        return ClientMessageType.createFile;
+      case 'DeleteFile':
+        return ClientMessageType.deleteFile;
+      case 'RenameFile':
+        return ClientMessageType.renameFile;
       case 'Search':
         return ClientMessageType.search;
       case 'CancelSearch':
@@ -69,6 +77,8 @@ class ClientMessageTypeMapper extends EnumMapper<ClientMessageType> {
         return 'CloseFile';
       case ClientMessageType.getDirectory:
         return 'GetDirectory';
+      case ClientMessageType.getWorkingDirectory:
+        return 'GetWorkingDirectory';
       case ClientMessageType.refreshDirectory:
         return 'RefreshDirectory';
       case ClientMessageType.changeFile:
@@ -89,6 +99,12 @@ class ClientMessageTypeMapper extends EnumMapper<ClientMessageType> {
         return 'WriteTerminal';
       case ClientMessageType.closeTerminal:
         return 'CloseTerminal';
+      case ClientMessageType.createFile:
+        return 'CreateFile';
+      case ClientMessageType.deleteFile:
+        return 'DeleteFile';
+      case ClientMessageType.renameFile:
+        return 'RenameFile';
       case ClientMessageType.search:
         return 'Search';
       case ClientMessageType.cancelSearch:
@@ -127,6 +143,10 @@ class ServerMessageTypeMapper extends EnumMapper<ServerMessageType> {
         return ServerMessageType.directoryContent;
       case 'DocumentContent':
         return ServerMessageType.documentContent;
+      case 'DocumentPreview':
+        return ServerMessageType.documentPreview;
+      case 'DocumentChunk':
+        return ServerMessageType.documentChunk;
       case 'FileSystemEvents':
         return ServerMessageType.fileSystemEvents;
       case 'CompletionResponse':
@@ -165,6 +185,10 @@ class ServerMessageTypeMapper extends EnumMapper<ServerMessageType> {
         return 'DirectoryContent';
       case ServerMessageType.documentContent:
         return 'DocumentContent';
+      case ServerMessageType.documentPreview:
+        return 'DocumentPreview';
+      case ServerMessageType.documentChunk:
+        return 'DocumentChunk';
       case ServerMessageType.fileSystemEvents:
         return 'FileSystemEvents';
       case ServerMessageType.completionResponse:

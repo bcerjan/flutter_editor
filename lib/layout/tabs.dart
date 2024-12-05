@@ -239,12 +239,12 @@ class ConnectionModal extends StatelessWidget {
         onChanged: (p0) => app.serverAddress = p0,
         editable: !connected,
       ),
-      UITextInput(
-        label: 'Code Folder',
-        text: app.codeFolder,
-        onChanged: (p0) => app.codeFolder = p0,
-        editable: !connected,
-      ),
+      // UITextInput(
+      //   label: 'Code Folder',
+      //   text: app.codeFolder,
+      //   onChanged: (p0) => app.codeFolder = p0,
+      //   editable: !connected,
+      // ),
     ];
     final List<UIButton> btns = [
       UIButton(

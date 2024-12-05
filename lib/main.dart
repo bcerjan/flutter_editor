@@ -56,11 +56,18 @@ void main(List<String> args) async {
   /// connect/disconnect from the server:
   remote.addListener(() {
     explorer.remoteChange(remote);
+    ui.remoteChange(remote);
     if (explorer.explorer.backend != null) {
-      explorer.explorer.setRootPath(app.codeFolder).then((_) {
-        explorer.explorer.root?.isExpanded = true;
-        explorer.rebuild();
-      });
+      Future.delayed(const Duration(milliseconds: 50));
+
+      /// We always start with the root of the server's workspace directory
+      // explorer.explorer.setRootPath(r'').then((_) {
+      //   explorer.explorer.root?.isExpanded = true;
+      //   explorer.rebuild();
+      // });
+      explorer.explorer.getWorkingDirectory();
+      Future.delayed(
+          const Duration(milliseconds: 50), () => explorer.rebuild());
     }
     // explorer.explorer.backend?.loadPath(app.codeFolder);
     fileSearch.remoteChange(remote);
@@ -78,7 +85,7 @@ void main(List<String> args) async {
   // explorer.explorer.setRootPath(dirPath).then((files) {
   //   explorer.explorer.root?.isExpanded = true;
   //   // explorer.explorer.dump();
-  //   explorer.rebuild();
+  // explorer.rebuild();
   //   // explorer.explorer.backend?.preload();
   // });
   // explorer.explorer.backend?.setRootPath(dirPath); // preloads 4 depths

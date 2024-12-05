@@ -67,12 +67,10 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
 
   void remoteChange(RemoteProvider<T> provider) {
     if (provider.remote != null) {
-      // notifies internally
-      initializeRemote(
-        wsConnection: provider.remote!,
-        msgStream: provider.remote!.messages!,
-      );
+      explorer.setBackend(RemoteFs<T>());
+      explorer.backend?.updateConnection(provider.remote);
     } else {
+      explorer.backend?.updateConnection(provider.remote);
       explorer.setBackend(null);
       tree = [];
       explorer.root = null;
@@ -80,21 +78,21 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
     }
   }
 
-  void initializeRemote({
-    required T wsConnection,
-    required Stream<ServerMessage> msgStream,
-  }) {
-    explorer
-        .setBackend(RemoteFs(wsConnection: wsConnection, msgStream: msgStream));
-    explorer.backend?.addListener(this);
-    notifyListeners();
-  }
+  // void initializeRemote({
+  //   required T wsConnection,
+  //   required Stream<ServerMessage> msgStream,
+  // }) {
+  //   explorer.backend?.addListener(this);
+  //   notifyListeners();
+  // }
 
   void onLoad(dynamic items) {
     rebuild();
   }
 
-  void onCreate(dynamic item) {}
+  void onCreate(dynamic item) {
+    rebuild();
+  }
 
   void onDelete(dynamic item) {
     rebuild();
@@ -112,7 +110,6 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
 
     List<ExplorerItem?> _previous = [...tree];
     tree = explorer.tree();
-
     if (!animate) {
       for (final i in tree) {
         i?.height = 1;
@@ -381,7 +378,6 @@ class ExplorerTree extends StatelessWidget {
 
     Size sz = getTextExtents('item', style);
     double itemHeight = sz.height + 8;
-
     List<ExplorerTreeItem> tree = [
       ...exp.tree.map(
           (item) => ExplorerTreeItem(item: item, provider: exp, style: style))

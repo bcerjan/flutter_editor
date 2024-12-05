@@ -20,6 +20,8 @@ abstract class RemoteConnection {
 
   void getDirectory({required Uri path});
 
+  void getWorkingDirectory();
+
   void refreshDirectory({required Uri path});
 
   void changeFile(
@@ -35,4 +37,11 @@ abstract class RemoteConnection {
 
   void search({required String search, bool searchContent = false});
   void cancelSearch();
+
+  void renameFile({required String oldPath, required String newPath});
+  void renameDirectory({required String oldPath, required String newPath});
+  void createFile({required String path});
+  void createDirectory({required String path});
+  void deleteFile({required String path});
+  void deleteDirectory({required String path});
 }

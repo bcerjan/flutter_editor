@@ -28,7 +28,7 @@ class WebsocketConnection extends RemoteConnection
         // return channel!.stream
         //     .map((val) => ServerMessageMapper.fromJson(val as String));
         final stream = channel!.stream.asBroadcastStream();
-        subscription = stream.listen(null);
+        subscription = stream.listen((val) => print(val));
         messages = stream.map((val) {
           return ServerMessageMapper.fromJson(val);
         });
@@ -65,6 +65,12 @@ class WebsocketConnection extends RemoteConnection
   void getDirectory({required Uri path}) {
     checkConnection();
     channel!.sink.add(ClientMessage.getDirectory(path).toJson());
+  }
+
+  @override
+  void getWorkingDirectory() {
+    checkConnection();
+    channel!.sink.add(ClientMessage.getWorkingDirectory().toJson());
   }
 
   @override
@@ -118,6 +124,44 @@ class WebsocketConnection extends RemoteConnection
       query: search,
       searchContent: searchContent,
     ).toJson());
+  }
+
+  @override
+  void createDirectory({required String path}) {
+    checkConnection();
+    channel!.sink.add(ClientMessage.createDirectory(path: path));
+  }
+
+  @override
+  void createFile({required String path}) {
+    checkConnection();
+    channel!.sink.add(ClientMessage.createFile(path: path));
+  }
+
+  @override
+  void deleteDirectory({required String path}) {
+    checkConnection();
+    channel!.sink.add(ClientMessage.deleteDirectory(path: path));
+  }
+
+  @override
+  void deleteFile({required String path}) {
+    checkConnection();
+    channel!.sink.add(ClientMessage.deleteFile(path: path));
+  }
+
+  @override
+  void renameDirectory({required String oldPath, required String newPath}) {
+    checkConnection();
+    channel!.sink
+        .add(ClientMessage.renameDirectory(oldPath: oldPath, newPath: newPath));
+  }
+
+  @override
+  void renameFile({required String oldPath, required String newPath}) {
+    checkConnection();
+    channel!.sink
+        .add(ClientMessage.renameFile(oldPath: oldPath, newPath: newPath));
   }
 
   void checkConnection() {

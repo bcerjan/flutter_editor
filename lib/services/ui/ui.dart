@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:editor/services/websocket/models/server_class_defs/message_types.dart';
+import 'package:editor/services/websocket/remote_connection.dart';
+import 'package:editor/services/websocket/remote_provider.dart';
+import 'package:editor/widgets/error_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:editor/services/ui/menu.dart';
 
@@ -19,6 +23,9 @@ class UIProvider extends ChangeNotifier {
   int menuIndex = 0;
   Function? onClearPopups;
 
+  /// So we can listen to errors from the server and show them
+  StreamSubscription? sub;
+
   UIMenuData? menu(String id, {void Function(UIMenuData)? onSelect}) {
     menus[id] = menus[id] ?? UIMenuData();
     menus[id]?.onSelect = onSelect ?? menus[id]?.onSelect;
@@ -27,6 +34,20 @@ class UIProvider extends ChangeNotifier {
 
   bool hasPopups() {
     return popups.isNotEmpty;
+  }
+
+  void remoteChange(RemoteProvider remote) {
+    if (remote.connected) {
+      sub = remote.remote!.messages!.listen((msg) => errorListener(msg));
+    } else {
+      sub?.cancel();
+    }
+  }
+
+  void errorListener(ServerMessage msg) {
+    if (msg.type == ServerMessageType.error) {
+      setPopup(ErrorModal(text: msg.content['message']), blur: true);
+    }
   }
 
   /// Blur = background blur. Shield = if clicking off the modal should close it
@@ -86,5 +107,11 @@ class UIProvider extends ChangeNotifier {
         onClearPopups?.call();
       }
     }
+  }
+
+  @override
+  void dispose() {
+    sub?.cancel();
+    super.dispose();
   }
 }

@@ -1,13 +1,14 @@
-import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
+import 'package:editor/services/websocket/models/server_class_defs/file_node.dart';
+import 'package:editor/services/websocket/remote_connection.dart';
 import 'package:path/path.dart' as _path;
 
 List<String> folderExclude = [];
 List<String> fileExclude = [];
 
 class ExplorerItem {
-  ExplorerItem(String this.fullPath) {
+  ExplorerItem(this.fullPath) {
     fileName = _path.basename(fullPath);
   }
 
@@ -18,10 +19,10 @@ class ExplorerItem {
 
   int depth = 0;
   bool isDirectory = false;
-  bool isBinary = false;
+  // bool isBinary = false;
   bool isExpanded = false;
 
-  bool canLoadMore = false;
+  // bool canLoadMore = false;
 
   double height = 0;
   int duration = 0;
@@ -31,23 +32,50 @@ class ExplorerItem {
   dynamic data;
   dynamic extraData;
 
-  void buildTree(List<ExplorerItem?> items) {
+  factory ExplorerItem.fromFileNode(FileNode node, {int depth = 0}) {
+    final ExplorerItem ret = ExplorerItem(node.path.toFilePath());
+
+    final List<ExplorerItem> children = [];
+
+    ret.depth = depth;
+    ret.isDirectory = node.isDirectory;
+
+    for (final c in node.children ?? []) {
+      children
+          .add(ExplorerItem.fromFileNode(c, depth: depth + 1)..parent = ret);
+    }
+
+    children.sort((a, b) {
+      if (a.isDirectory != b.isDirectory) {
+        return a.isDirectory ? -1 : 1;
+      }
+      return a.fileName.compareTo(b.fileName);
+    });
+
+    ret.children = children;
+    if (depth == 0) ret.isExpanded = true;
+    return ret;
+  }
+
+  List<ExplorerItem?> buildTree() {
     if (isDirectory) {
       for (final ex in folderExclude) {
-        if (fullPath.indexOf(ex) != -1) return;
+        if (fullPath.contains(ex)) return [];
       }
     } else {
       String ext = _path.extension(fullPath).toLowerCase();
       for (final ex in fileExclude) {
-        if (ext == ex) return;
+        if (ext == ex) return [];
       }
     }
-
-    items.add(this);
-    if (!isExpanded) return;
+    final List<ExplorerItem?> ret = [];
+    ret.add(this);
+    if (!isExpanded) return ret;
     for (final c in children) {
-      c?.buildTree(items);
+      ret.addAll(c?.buildTree() ?? []);
     }
+
+    return ret;
   }
 
   void files(List<ExplorerItem?> items) {
@@ -84,14 +112,14 @@ class ExplorerItem {
     return parent?.rootItem() ?? this;
   }
 
-  bool setData(dynamic items) {
-    if (items['items'] == null) return false;
+  bool setData(FileNode node) {
+    if (node.children == null || node.children!.isEmpty) return false;
 
     List<ExplorerItem?> added = [];
     List<ExplorerItem?> removed = [];
-    for (var temp in items['items']) {
-      Map<String, dynamic> item = json.decode(temp);
-      String path = item['path'] ?? '';
+    for (final FileNode child in node.children!) {
+      final Map<String, dynamic> item = {};
+      String path = child.path.toFilePath();
       if (path == '') continue;
       if (path.startsWith('.')) {
         path = _path.join(fullPath, path);
@@ -118,9 +146,8 @@ class ExplorerItem {
     for (final c in children) {
       bool found = false;
       String cp = c?.fullPath ?? '';
-      for (final temp in items['items']) {
-        Map<String, dynamic> item = json.decode(temp);
-        String ip = item['path'];
+      for (final child in node.children!) {
+        String ip = child.path.toFilePath();
         if (cp == ip) {
           found = true;
           break;
@@ -166,17 +193,24 @@ class Explorer implements ExplorerListener {
   void setBackend(ExplorerBackend? back) {
     backend = back;
     backend?.addListener(this);
+    if (back == null) {
+      root = null;
+    }
   }
 
   Future<bool> setRootPath(String path) {
-    String p = _path.normalize(Directory(path).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
     root = ExplorerItem(p);
     backend?.setRootPath(p);
     return loadPath(p);
   }
 
+  void getWorkingDirectory() {
+    backend?.getWorkingDirectory();
+  }
+
   Future<bool> loadPath(String path) {
-    String p = _path.normalize(Directory(path).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
     if (isLoading(p)) {
       _busy();
       return Future.value(false);
@@ -189,12 +223,12 @@ class Explorer implements ExplorerListener {
   }
 
   ExplorerItem? itemFromPath(String path) {
-    String p = _path.normalize(Directory(path).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
     return root?.itemFromPath(p);
   }
 
   Future<bool> deleteDirectory(String path, {bool recursive = false}) {
-    String p = _path.normalize(Directory(path).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
     if (isLoading(p)) {
       _busy();
       return Future.value(false);
@@ -206,7 +240,7 @@ class Explorer implements ExplorerListener {
   }
 
   Future<bool> deleteFile(String path) {
-    String p = _path.normalize(Directory(path).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
     if (isLoading(p)) {
       _busy();
       return Future.value(false);
@@ -218,8 +252,8 @@ class Explorer implements ExplorerListener {
   }
 
   Future<bool> renameDirectory(String path, String newPath) {
-    String p = _path.normalize(Directory(path).absolute.path);
-    String np = _path.normalize(Directory(newPath).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
+    String np = _path.normalize(getCorrectPath(newPath));
     if (isLoading(p)) {
       _busy();
       return Future.value(false);
@@ -231,8 +265,8 @@ class Explorer implements ExplorerListener {
   }
 
   Future<bool> renameFile(String path, String newPath) {
-    String p = _path.normalize(Directory(path).absolute.path);
-    String np = _path.normalize(Directory(newPath).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
+    String np = _path.normalize(getCorrectPath(newPath));
     if (isLoading(p)) {
       _busy();
       return Future.value(false);
@@ -244,7 +278,7 @@ class Explorer implements ExplorerListener {
   }
 
   bool isLoading(String path) {
-    String p = _path.normalize(Directory(path).absolute.path);
+    String p = _path.normalize(getCorrectPath(path));
     return requests.containsKey(p);
   }
 
@@ -253,9 +287,7 @@ class Explorer implements ExplorerListener {
   }
 
   List<ExplorerItem?> tree() {
-    List<ExplorerItem?> _tree = [];
-    root?.buildTree(_tree);
-    return _tree;
+    return root?.buildTree() ?? [];
   }
 
   List<ExplorerItem?> files() {
@@ -268,24 +300,15 @@ class Explorer implements ExplorerListener {
   /// Requires json that contains: 'path' and 'items': [{'path' : ... ,
   ///   'isDirectory': ... , 'items': [] }] as a raw string, not a map
   @override
-  void onLoad(dynamic items) {
-    dynamic json = jsonDecode(items);
-    String p = _path.normalize(Directory(json['path']).absolute.path);
-    ExplorerItem? item = itemFromPath(p);
-
-    bool didUpdate = item?.setData(json) ?? false;
-    item?.isDirectory = true;
-    if (requests.containsKey(p)) {
-      requests[p]?.complete(didUpdate);
-      requests.remove(p);
-    }
+  void onLoad(FileNode node) {
+    root = ExplorerItem.fromFileNode(node.convertToRelativePath('.'));
   }
 
   void onCreate(dynamic item) {}
 
   void onDelete(dynamic item) {
     dynamic json = jsonDecode(item);
-    String p = _path.normalize(Directory(json['path']).absolute.path);
+    String p = _path.normalize(getCorrectPath(json['path']));
 
     ExplorerItem? _item = itemFromPath(p);
     _item?.parent?.children.removeWhere((i) => i == item);
@@ -312,19 +335,28 @@ class Explorer implements ExplorerListener {
       fileExclude.add(s);
     }
   }
+
+  String getCorrectPath(String path) {
+    // Originally, used absolute paths. On Windows, this breaks things with the
+    // server, so we use all relative paths
+    // print('in getCorrectPath: $path and root path is: ${root?.fullPath}');
+    return _path.relative(path, from: root?.fullPath);
+  }
 }
 
 abstract class ExplorerListener {
-  void onLoad(dynamic items);
+  void onLoad(FileNode node);
   void onCreate(dynamic item);
   void onDelete(dynamic item);
   void onError(dynamic error);
 }
 
 // isolate?
-abstract class ExplorerBackend {
+abstract class ExplorerBackend<T extends RemoteConnection> {
+  void updateConnection(T? connection);
   void addListener(ExplorerListener listener);
   void setRootPath(String path);
+  void getWorkingDirectory();
   void loadPath(String path);
   void openFile(String path);
   void createDirectory(String path);

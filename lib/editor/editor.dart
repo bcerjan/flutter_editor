@@ -431,7 +431,9 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
     doc.begin();
     doc.command(cmd, params: params, modifiedBlocks: modifiedBlocks);
     if (cmd == 'enter') {
+      final Document original = doc.doc.clone();
       doc.doc.autoIndent();
+      doc.sendChanges(original);
     }
     doc.commit();
 

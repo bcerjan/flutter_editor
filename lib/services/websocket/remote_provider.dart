@@ -5,14 +5,19 @@ class RemoteProvider<T extends RemoteConnection> extends ChangeNotifier {
   RemoteProvider();
   T? remote;
 
-  bool get connected => remote != null;
+  bool get connected =>
+      remote != null &&
+      remote?.messages != null &&
+      remote?.subscription != null;
 
   void connect(T remote) {
     this.remote = remote;
 
     // We need the delay for the stream from the websocket to be initialized
     // probably there is a more elegant method to handle this...
-    Future.delayed(const Duration(milliseconds: 50), () => notifyListeners());
+    if (connected) {
+      Future.delayed(const Duration(milliseconds: 50), () => notifyListeners());
+    }
   }
 
   void disconnect() {

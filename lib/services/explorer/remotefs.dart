@@ -29,9 +29,9 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
 
   @override
   void updateConnection(T? connection) {
-    if (connection != null) {
+    if (connection != null && connection.connected) {
       this.connection = connection;
-      sub = connection.messages!.listen((msg) => fileEventMessageHandler(msg));
+      sub = connection.messages?.listen((msg) => fileEventMessageHandler(msg));
     } else {
       this.connection = null;
       workspace = null;
@@ -190,7 +190,7 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
   }
 
   void checkConnection() {
-    if (connection == null || sub == null) {
+    if (connection == null || !connection!.connected || sub == null) {
       throw Exception('No connection established yet -- initialize first');
     }
   }

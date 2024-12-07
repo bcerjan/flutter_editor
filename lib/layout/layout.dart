@@ -243,7 +243,10 @@ class _AppLayout extends State<AppLayout> with WidgetsBindingObserver {
           ],
 
           // popups
-          ...ui.popups.map((pop) => pop.widget)
+          ...ui.popups.map((pop) => pop.widget),
+
+          // errors
+          if (ui.error != null) ui.error!.widget,
         ])));
   }
 }

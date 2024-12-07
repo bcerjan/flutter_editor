@@ -13,7 +13,7 @@ class ErrorModal extends StatelessWidget {
     final List<UIButton> btns = [
       UIButton(
         text: 'Dismiss',
-        onTap: () => ui.clearPopups(),
+        onTap: () => ui.clearError(),
       ),
     ];
     return UIModal(

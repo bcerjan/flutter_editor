@@ -18,6 +18,7 @@ class Popup {
 class UIProvider extends ChangeNotifier {
   Map<String, Function?> actions = <String, Function?>{};
   List<Popup> popups = <Popup>[];
+  Popup? error;
   Map<String, UIMenuData> menus = {};
 
   int menuIndex = 0;
@@ -46,8 +47,27 @@ class UIProvider extends ChangeNotifier {
 
   void errorListener(ServerMessage msg) {
     if (msg.type == ServerMessageType.error) {
-      setPopup(ErrorModal(text: msg.content['message']), blur: true);
+      setError(ErrorModal(text: msg.content['message']));
     }
+  }
+
+  void setError(Widget child) {
+    error = Popup(
+        widget: GestureDetector(
+            onTap: () {
+              popPopup();
+            },
+            child: Stack(children: [
+              Container(color: Colors.black.withOpacity(0.5)),
+              child
+            ])),
+        isMenu: child is UIMenuPopup);
+    notifyListeners();
+  }
+
+  void clearError() {
+    error = null;
+    notifyListeners();
   }
 
   /// Blur = background blur. Shield = if clicking off the modal should close it

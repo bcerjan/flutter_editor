@@ -92,15 +92,29 @@ class CodeEditingController extends ChangeNotifier {
 
   // Remote communication for opening/closing files:
   RemoteConnection? connection;
-  Stream<ServerMessage>? msgStream;
+  StreamSubscription<ServerMessage>? sub;
 
   void configureRemote(RemoteProvider remote) {
     if (remote.connected) {
       connection = remote.remote;
-      msgStream = remote.remote!.messages;
+      sub = connection!.messages?.listen((msg) => documentMessageHandler(msg));
     } else {
       connection = null;
-      msgStream = null;
+      sub?.cancel();
+    }
+  }
+
+  void documentMessageHandler(ServerMessage msg) {
+    switch (msg.type) {
+      case ServerMessageType.documentContent:
+        doc.openFile(msg);
+        ready = true;
+        notifyListeners();
+        break;
+      case ServerMessageType.documentChunk:
+        break;
+      default:
+        return;
     }
   }
 
@@ -114,13 +128,6 @@ class CodeEditingController extends ChangeNotifier {
 
   bool openFile(String path) {
     connection!.openFile(path: _path.toUri(path));
-    msgStream!
-        .firstWhere((msg) => msg.type == ServerMessageType.documentContent)
-        .then((msg) {
-      doc.openFile(msg);
-      ready = true;
-      notifyListeners();
-    });
     return true;
   }
 
@@ -543,6 +550,12 @@ class CodeEditingController extends ChangeNotifier {
         notifyListeners();
       }
     }
+  }
+
+  @override
+  void dispose() {
+    sub?.cancel();
+    super.dispose();
   }
 }
 

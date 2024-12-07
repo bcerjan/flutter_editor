@@ -31,8 +31,6 @@ class ClientMessageTypeMapper extends EnumMapper<ClientMessageType> {
         return ClientMessageType.closeFile;
       case 'GetDirectory':
         return ClientMessageType.getDirectory;
-      case 'GetWorkingDirectory':
-        return ClientMessageType.getWorkingDirectory;
       case 'RefreshDirectory':
         return ClientMessageType.refreshDirectory;
       case 'ChangeFile':
@@ -77,8 +75,6 @@ class ClientMessageTypeMapper extends EnumMapper<ClientMessageType> {
         return 'CloseFile';
       case ClientMessageType.getDirectory:
         return 'GetDirectory';
-      case ClientMessageType.getWorkingDirectory:
-        return 'GetWorkingDirectory';
       case ClientMessageType.refreshDirectory:
         return 'RefreshDirectory';
       case ClientMessageType.changeFile:

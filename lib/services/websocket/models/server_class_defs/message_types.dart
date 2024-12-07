@@ -16,7 +16,6 @@ enum ClientMessageType {
   openFile,
   closeFile,
   getDirectory,
-  getWorkingDirectory,
   refreshDirectory,
   changeFile,
   saveFile,
@@ -86,7 +85,7 @@ class ClientMessage extends Message with ClientMessageMappable {
 
   static ClientMessage getWorkingDirectory() {
     return const ClientMessage(
-      type: ClientMessageType.getWorkingDirectory,
+      type: ClientMessageType.getDirectory,
       content: {},
     );
   }

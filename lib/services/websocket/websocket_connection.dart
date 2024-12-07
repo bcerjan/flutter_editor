@@ -70,7 +70,7 @@ class WebsocketConnection extends RemoteConnection
   @override
   void getWorkingDirectory() {
     checkConnection();
-    channel!.sink.add(ClientMessage.getWorkingDirectory().toJson());
+    channel!.sink.add(ClientMessage.getDirectory(Uri.file('')).toJson());
   }
 
   @override

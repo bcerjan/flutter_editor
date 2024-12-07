@@ -81,9 +81,9 @@ class LineEndingMapper extends EnumMapper<LineEnding> {
     switch (value) {
       case 'CRLF':
         return LineEnding.crlf;
-      case 'LF':
+      case 'LR':
         return LineEnding.lf;
-      case 'MIXED':
+      case 'Mixed':
         return LineEnding.mixed;
       default:
         throw MapperException.unknownEnumValue(value);
@@ -96,17 +96,17 @@ class LineEndingMapper extends EnumMapper<LineEnding> {
       case LineEnding.crlf:
         return 'CRLF';
       case LineEnding.lf:
-        return 'LF';
+        return 'LR';
       case LineEnding.mixed:
-        return 'MIXED';
+        return 'Mixed';
     }
   }
 }
 
 extension LineEndingMapperExtension on LineEnding {
-  String toValue() {
+  dynamic toValue() {
     LineEndingMapper.ensureInitialized();
-    return MapperContainer.globals.toValue<LineEnding>(this) as String;
+    return MapperContainer.globals.toValue<LineEnding>(this);
   }
 }
 

@@ -56,21 +56,24 @@ class FileEncoding with FileEncodingMappable {
 }
 
 //TODO: Check what LineEnding.mixed should return...
-@MappableEnum(caseStyle: CaseStyle.upperCase)
+@MappableEnum()
 enum LineEnding {
+  @MappableValue('CRLF')
   crlf,
+  @MappableValue('LR')
   lf,
+  @MappableValue('Mixed')
   mixed;
 
   String getStringEnding() {
     switch (this) {
       case LineEnding.crlf:
-        return r'\r\n';
+        return '\r\n';
       case LineEnding.lf:
-        return r'\n';
+        return '\n';
       case LineEnding.mixed:
         // Bad???
-        return r'\n';
+        return '\n';
     }
   }
 }
@@ -106,7 +109,7 @@ class DocumentMetadata with DocumentMetadataMappable {
         readonly = false,
         fileType = FileType.unknown,
         encoding = const FileEncoding(encoding: '', confidence: 0),
-        lineEnding = LineEnding.crlf,
+        lineEnding = LineEnding.lf,
         createdAt = null,
         modifiedAt = null;
 }

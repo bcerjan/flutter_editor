@@ -227,8 +227,6 @@ class ConnectionModal extends StatelessWidget {
     AppProvider app = Provider.of<AppProvider>(context, listen: false);
     RemoteProvider remote = Provider.of<RemoteProvider>(context, listen: false);
     UIProvider ui = Provider.of<UIProvider>(context, listen: false);
-    ExplorerProvider explporer =
-        Provider.of<ExplorerProvider>(context, listen: false);
 
     final bool connected = remote.connected;
 
@@ -249,12 +247,13 @@ class ConnectionModal extends StatelessWidget {
     final List<UIButton> btns = [
       UIButton(
         text: connected ? 'Disconnect' : 'Connect',
-        onTap: () {
+        onTap: () async {
           // Should update other provide'd values as they listen to this one
           try {
             if (!connected) {
-              remote.connect(
-                  WebsocketConnection()..connect(serverUrl: app.serverAddress));
+              final temp = WebsocketConnection();
+              await temp.connect(serverUrl: app.serverAddress);
+              remote.connect(temp);
               Future.delayed(
                   const Duration(milliseconds: 50), () => ui.clearPopups());
             } else {
@@ -262,10 +261,9 @@ class ConnectionModal extends StatelessWidget {
               Future.delayed(
                   const Duration(milliseconds: 50), () => ui.clearPopups());
             }
-          } catch (e, trace) {
-            print(trace);
-            UIProvider ui = Provider.of<UIProvider>(context, listen: false);
-            ui.setPopup(ErrorModal(text: e.toString()));
+          } catch (e) {
+            ui.clearPopups();
+            ui.setError(ErrorModal(text: e.toString()));
           }
         },
       )

@@ -163,8 +163,9 @@ class CodeEditingController extends ChangeNotifier {
   void command(String cmd,
       {dynamic params, List<Block>? modifiedBlocks}) async {
     Document d = doc;
-    Document original = Document();
-    original.blocks = List.from(d.blocks, growable: false);
+    // Document original = Document();
+    // original.blocks = List.from(d.blocks, growable: false);
+    final Document original = d.clone();
     Cursor cursor = d.cursor().copy();
 
     bool doScroll = false;

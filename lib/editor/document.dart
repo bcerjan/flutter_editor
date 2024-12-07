@@ -94,6 +94,17 @@ class Document {
     // !todo
   }
 
+  Document clone() {
+    Document ret = Document(path: docPath);
+    final List<Block> blocks = [];
+    for (final b in this.blocks) {
+      blocks.add(Block(b.text, line: b.line));
+    }
+    ret.metadata = metadata;
+    ret.blocks = blocks;
+    return ret;
+  }
+
   Cursor cursor() {
     if (cursors.isEmpty) {
       cursors.add(Cursor(document: this, block: firstBlock()));
@@ -843,8 +854,7 @@ class Document {
 
   /// Returns diff changes from old to new
   List<DiffChange> getDiffList(Document old) {
-    // final diff = DiffMatchPatch().diff(old.getRawText(), getRawText());
-    final diff = DiffMatchPatch().diff(getRawText(), old.getRawText());
+    final diff = DiffMatchPatch().diff(old.getRawText(), getRawText());
     return diff.map((d) => DiffChange.fromDiff(diff: d)).toList();
   }
 }

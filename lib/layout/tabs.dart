@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:editor/services/explorer/filesystem.dart';
 import 'package:editor/services/ui/modal.dart';
 import 'package:editor/services/websocket/remote_provider.dart';
 import 'package:editor/services/websocket/websocket_connection.dart';
@@ -65,7 +66,8 @@ class _EditorTabBar extends State<EditorTabBar> {
       menu?.items.clear();
       menu?.menuIndex = -1;
       //TODO: replace with enum / something better than this
-      for (final s in ['Connection', 'New Folder', 'New File']) {
+      // for (final s in ['Connection', 'New Folder', 'New File']) {
+      for (final s in ['Connection', 'Save']) {
         if (s == 'Connection') {
           menu?.items.add(
             UIMenuData()
@@ -81,7 +83,14 @@ class _EditorTabBar extends State<EditorTabBar> {
               },
           );
         } else {
-          menu?.items.add(UIMenuData()..title = s);
+          menu?.items.add(
+            UIMenuData()
+              ..title = s
+              ..onSelect = (_) {
+                final app = Provider.of<AppProvider>(context, listen: false);
+                app.document?.saveFile();
+              },
+          );
         }
       }
       ui.setPopup(

@@ -15,27 +15,30 @@ class WebsocketConnection extends RemoteConnection
 
   WebSocketChannel? channel;
 
-  bool get connected => channel != null;
+  @override
+  bool get connected => channel != null && subscription != null;
 
   /// Expects URL in the format: wss://a.b.c or ws://a.b.c
   @override
   Future<void> connect({required String serverUrl}) async {
-    final uri = Uri.tryParse(serverUrl);
-    if (uri != null) {
-      try {
+    try {
+      final uri = Uri.tryParse(serverUrl);
+      if (uri != null) {
         channel = WebSocketChannel.connect(uri);
         await channel!.ready;
         // return channel!.stream
         //     .map((val) => ServerMessageMapper.fromJson(val as String));
         final stream = channel!.stream.asBroadcastStream();
-        subscription = stream.listen((val) => print(val));
+        // subscription = stream.listen((val) => print(val));
+        subscription = stream.listen(null);
         messages = stream.map((val) {
           return ServerMessageMapper.fromJson(val);
         });
         return;
-      } catch (e) {
-        rethrow;
       }
+    } catch (e) {
+      print('caught exception in websocket_connect');
+      rethrow;
     }
 
     throw WebSocketChannelException('Could not parse URL into a suitable URI');

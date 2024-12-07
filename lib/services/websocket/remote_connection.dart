@@ -8,6 +8,7 @@ import 'package:editor/services/websocket/models/server_class_defs/message_types
 abstract class RemoteConnection {
   Stream<ServerMessage>? messages;
   StreamSubscription? subscription;
+  bool get connected;
 
   /// Expects URL in the format: wss://a.b.c or ws://a.b.c
   void connect({required String serverUrl});

@@ -107,10 +107,9 @@ class CodeEditingController extends ChangeNotifier {
   void documentMessageHandler(ServerMessage msg) {
     // Only handle if this document is at issue
     // Need to convert like this to avoid weird leading characters on Windows
-    final m = Uri.file(msg.content['path']);
-    final d = Uri.file(doc.docPath);
 
-    if (msg.content['path'] != null && d == m) {
+    if (msg.content['path'] != null &&
+        Uri.file(msg.content['path']) == Uri.file(doc.docPath)) {
       switch (msg.type) {
         case ServerMessageType.documentContent:
           doc.openFile(msg);
@@ -135,6 +134,11 @@ class CodeEditingController extends ChangeNotifier {
 
   bool openFile(String path) {
     connection!.openFile(path: _path.toUri(path));
+    return true;
+  }
+
+  bool saveFile() {
+    connection!.saveFile(document: doc);
     return true;
   }
 
@@ -433,7 +437,8 @@ class CodeEditingController extends ChangeNotifier {
           break;
         }
       case 'save':
-        d.saveFile();
+        // d.saveFile();
+        saveFile();
         break;
 
       case 'select_all':

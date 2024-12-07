@@ -101,6 +101,7 @@ class _Editor extends State<Editor> with WidgetsBindingObserver {
     });
     d.addListener('onSave', (documentId) {
       gitDiff();
+      doc.saveFile();
     });
     d.addListener('onUndo', () {
       gitDiff();

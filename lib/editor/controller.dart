@@ -105,16 +105,23 @@ class CodeEditingController extends ChangeNotifier {
   }
 
   void documentMessageHandler(ServerMessage msg) {
-    switch (msg.type) {
-      case ServerMessageType.documentContent:
-        doc.openFile(msg);
-        ready = true;
-        notifyListeners();
-        break;
-      case ServerMessageType.documentChunk:
-        break;
-      default:
-        return;
+    // Only handle if this document is at issue
+    // Need to convert like this to avoid weird leading characters on Windows
+    final m = Uri.file(msg.content['path']);
+    final d = Uri.file(doc.docPath);
+
+    if (msg.content['path'] != null && d == m) {
+      switch (msg.type) {
+        case ServerMessageType.documentContent:
+          doc.openFile(msg);
+          ready = true;
+          notifyListeners();
+          break;
+        case ServerMessageType.documentChunk:
+          break;
+        default:
+          return;
+      }
     }
   }
 

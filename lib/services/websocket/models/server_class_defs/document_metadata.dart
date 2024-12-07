@@ -55,16 +55,16 @@ class FileEncoding with FileEncodingMappable {
   final double confidence;
 }
 
-//TODO: Check what LineEnding.mixed should return...
 @MappableEnum()
 enum LineEnding {
   @MappableValue('CRLF')
   crlf,
-  @MappableValue('LR')
+  @MappableValue('LF')
   lf,
   @MappableValue('Mixed')
   mixed;
 
+//TODO: Check what LineEnding.mixed should return...
   String getStringEnding() {
     switch (this) {
       case LineEnding.crlf:

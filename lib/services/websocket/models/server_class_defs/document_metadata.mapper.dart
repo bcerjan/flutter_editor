@@ -81,7 +81,7 @@ class LineEndingMapper extends EnumMapper<LineEnding> {
     switch (value) {
       case 'CRLF':
         return LineEnding.crlf;
-      case 'LR':
+      case 'LF':
         return LineEnding.lf;
       case 'Mixed':
         return LineEnding.mixed;
@@ -96,7 +96,7 @@ class LineEndingMapper extends EnumMapper<LineEnding> {
       case LineEnding.crlf:
         return 'CRLF';
       case LineEnding.lf:
-        return 'LR';
+        return 'LF';
       case LineEnding.mixed:
         return 'Mixed';
     }

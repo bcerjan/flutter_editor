@@ -324,12 +324,9 @@ class ExplorerTreeItem extends StatelessWidget {
           if (_item.isDirectory) {
             _item.isExpanded = !expanded;
             if (_item.isExpanded) {
-              provider?.explorer.loadPath(_item.fullPath).then((res) {
-                provider?.rebuild();
-              });
-            } else {
-              provider?.rebuild();
+              provider?.explorer.loadPath(_item.fullPath);
             }
+            provider?.rebuild();
           }
           provider?.select(_item);
         });

@@ -126,8 +126,10 @@ class FileNode with FileNodeMappable {
           .toSet()
           .difference(parent.path.pathSegments.toSet())
           .toList();
-      return createSubPath(
-          segments: needed, basePath: parent.path.toFilePath());
+      if (needed.isNotEmpty) {
+        return createSubPath(
+            segments: needed, basePath: parent.path.toFilePath());
+      }
     }
 
     // We updated this node

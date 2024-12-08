@@ -52,16 +52,16 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
         final FileChangeType type = convert(e.keys.first); // should only be one
         final Map<String, dynamic> content =
             e.values.first as Map<String, dynamic>; // ""
-        print(type);
         switch (type) {
           case FileChangeType.Changed:
-          // Need to handle this elsewhere
+            // Need to handle this elsewhere
+            break;
           case FileChangeType.Created:
             // reload path at the location:
-            print(_path.dirname(_path.relative(Uri.file(content['path']).path,
-                from: rootPath)));
-            loadPath(
-                _path.dirname(_path.normalize(Uri.file(content['path']).path)));
+            // print(_path.dirname(_path.relative(Uri.file(content['path']).path,
+            //     from: rootPath)));
+            // loadPath(
+            //     _path.dirname(_path.normalize(Uri.file(content['path']).path)));
             break;
           case FileChangeType.Deleted:
             for (final l in listeners) {
@@ -74,9 +74,9 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
         }
       }
     } else if (msg.type == ServerMessageType.directoryContent) {
-      // if (rootPath.isEmpty) {
-      //   rootPath = msg.content['path'];
-      // }
+      if (rootPath.isEmpty) {
+        rootPath = msg.content['path'];
+      }
       FileNode newTree = FileNode.fromServerDirectory(
         rootPath: msg.content['path'] ?? rootPath,
         jsonList: msg.content['content'],

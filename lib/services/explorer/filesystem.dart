@@ -57,6 +57,62 @@ class ExplorerItem {
     return ret;
   }
 
+  /// Updates tree preserving status where appropriate.
+  /// Must be called such that the updated node matches the root node
+  void update(FileNode updated) {
+    final updatedTree = ExplorerItem.fromFileNode(updated);
+    mergeHirearchy(updated: updatedTree);
+    // for (final c in updatedTree.children) {
+    //   if (c != null) {
+    //     final match = contains(haystack: children, needle: c);
+    //     if (match != null) {
+    //       mergeHirearchy(original: match, updated: c);
+    //     } else {
+    //       children.add(c);
+    //     }
+    //   }
+    // }
+    print(children);
+  }
+
+  ExplorerItem? contains(
+      {required List<ExplorerItem?> haystack, required ExplorerItem needle}) {
+    for (final straw in haystack) {
+      if (straw?.fullPath == needle.fullPath) {
+        return straw;
+      }
+    }
+    return null;
+  }
+
+  // Need to do depth first and return boolean if we found the target location
+  // Possibly just put the actual filenodes here and just let the original
+  // merge do it's thing, as it's already well-prepared for this sort of
+  // merging. This would entail adjusting the get/set methods to access the
+  // inner [FileNode]s
+  void mergeHirearchy({required ExplorerItem updated}) {
+    print('merge called');
+    for (final c in updated.children) {
+      if (c != null) {
+        final match = contains(haystack: children, needle: c);
+
+        if (match != null) {
+          if (c.isDirectory) {
+            print('found dir at ${match.fullPath}');
+            for (final c2 in c.children) {
+              print(c2);
+              if (c2 != null) {
+                match.mergeHirearchy(updated: c2);
+              }
+            }
+          }
+        } else {
+          children.add(c);
+        }
+      }
+    }
+  }
+
   List<ExplorerItem?> buildTree() {
     if (isDirectory) {
       for (final ex in folderExclude) {
@@ -215,7 +271,7 @@ class Explorer implements ExplorerListener {
       _busy();
       return Future.value(false);
     }
-    backend?.loadPath(path);
+    backend?.loadPath(p);
 
     Completer<bool> completer = Completer<bool>();
     requests[p] = completer;
@@ -301,7 +357,11 @@ class Explorer implements ExplorerListener {
   ///   'isDirectory': ... , 'items': [] }] as a raw string, not a map
   @override
   void onLoad(FileNode node) {
-    root = ExplorerItem.fromFileNode(node.convertToRelativePath('.'));
+    if (root == null) {
+      root = ExplorerItem.fromFileNode(node);
+    } else {
+      root?.update(node);
+    }
   }
 
   void onCreate(dynamic item) {}

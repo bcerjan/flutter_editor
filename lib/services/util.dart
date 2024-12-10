@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:path/path.dart' as _path;
 import 'package:archive/archive.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -102,4 +102,35 @@ Widget ScrollableText(String text, {TextStyle? style}) {
       scrollDirection: Axis.horizontal,
       child: Text(text,
           style: style, softWrap: false, overflow: TextOverflow.clip));
+}
+
+extension GetUniformFilePath on Uri {
+  String getRegularPath() {
+    String path = this.path;
+    if (Platform.isWindows) {
+      if (path.isNotEmpty && path[0] == r'/') {
+        path = path.substring(1);
+      }
+    }
+    return Uri.file(path).toFilePath();
+  }
+}
+
+extension DescendantUtilities on Uri {
+  bool immediateChild({required Uri child}) {
+    return this == Uri.file(_path.dirname(child.getRegularPath()));
+  }
+
+  /// Returns true if this node has the child somewhere in its descendants
+  bool ancestorOfChild({required Uri child}) {
+    final List<String> initSegments = List<String>.from(pathSegments);
+    final List<String> childSegments = List<String>.from(child.pathSegments);
+
+    final int initSegNum = initSegments.length;
+    final subList = childSegments.sublist(0, initSegNum - 1);
+    if (subList == initSegments) {
+      return true;
+    }
+    return false;
+  }
 }

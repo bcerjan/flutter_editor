@@ -1,125 +1,136 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:dart_mappable/dart_mappable.dart';
+import 'package:editor/layout/explorer.dart';
+import 'package:editor/main.dart';
+import 'package:editor/services/util.dart';
 import 'package:editor/services/websocket/models/server_class_defs/file_node.dart';
 import 'package:editor/services/websocket/remote_connection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as _path;
+
+part 'filesystem.mapper.dart';
 
 List<String> folderExclude = [];
 List<String> fileExclude = [];
 
-class ExplorerItem {
-  ExplorerItem(this.fullPath) {
-    fileName = _path.basename(fullPath);
-  }
+@MappableClass()
+class ExplorerItem with ExplorerItemMappable {
+  ExplorerItem({
+    required this.path,
+    this.isDirectory = false,
+    this.isExpanded = false,
+    this.isLoaded = false,
+    this.depth = 0,
+    this.children,
+  }) : name = _path.basename(path.toFilePath());
 
-  String fileName = '';
-  String fullPath = '';
+  List<ExplorerItem>? children;
+  bool isDirectory = false;
+  bool isExpanded = false;
+  bool isLoaded = false;
+
+  Uri path;
+  String name = '';
   String tempPath = '';
   String iconPath = '';
 
   int depth = 0;
-  bool isDirectory = false;
-  // bool isBinary = false;
-  bool isExpanded = false;
-
-  // bool canLoadMore = false;
-
   double height = 0;
   int duration = 0;
 
   ExplorerItem? parent;
-  List<ExplorerItem?> children = [];
+  // List<ExplorerItem?> expChildren = [];
   dynamic data;
   dynamic extraData;
 
   factory ExplorerItem.fromFileNode(FileNode node, {int depth = 0}) {
-    final ExplorerItem ret = ExplorerItem(node.path.toFilePath());
+    final ExplorerItem ret = ExplorerItem(
+      path: node.path,
+      isDirectory: node.isDirectory,
+      isLoaded: node.isLoaded,
+      isExpanded: node.isExpanded,
+      depth: depth,
+    );
 
-    final List<ExplorerItem> children = [];
+    ret.setChildren(node.children, depth: depth + 1);
+    ret.children?.sort((a, b) => compareTo(a, b));
+    ret.children?.map((e) => e.parent = ret);
 
-    ret.depth = depth;
-    ret.isDirectory = node.isDirectory;
-
-    for (final c in node.children ?? []) {
-      children
-          .add(ExplorerItem.fromFileNode(c, depth: depth + 1)..parent = ret);
-    }
-
-    children.sort((a, b) {
-      if (a.isDirectory != b.isDirectory) {
-        return a.isDirectory ? -1 : 1;
-      }
-      return a.fileName.compareTo(b.fileName);
-    });
-
-    ret.children = children;
-    if (depth == 0) ret.isExpanded = true;
     return ret;
   }
 
+  static int compareTo(ExplorerItem a, ExplorerItem b) {
+    if (a.isDirectory != b.isDirectory) {
+      return a.isDirectory ? -1 : 1;
+    }
+    return a.name.compareTo(b.name);
+  }
+
+  void setChildren(List<FileNode>? list, {int depth = 0}) {
+    children?.clear();
+    children = [];
+    for (final l in list ?? []) {
+      children?.add(ExplorerItem.fromFileNode(l, depth: depth));
+    }
+    children?.sort((a, b) => compareTo(a, b));
+  }
+
+  /// Returns the index of the child if it's already in our list, or -1 if it
+  /// isn't there yet.
+  int childIndex({required Uri childPath}) {
+    return children?.indexWhere((c) => c.path == childPath) ?? -1;
+  }
+
+  /// Returns the root node with it's children updated
+  ExplorerItem recursiveUpdate(FileNode node) {
+    if (node.path == path) {
+      final ret = ExplorerItem.fromFileNode(node);
+      ret.isExpanded = isExpanded;
+      return ret;
+    }
+
+    final List<ExplorerItem> ret = List<ExplorerItem>.from(children ?? []);
+    if (path.immediateChild(child: node.path)) {
+      final idx = childIndex(childPath: node.path);
+      if (idx < 0) {
+        // Add this entry if new
+        ret.add(ExplorerItem.fromFileNode(node, depth: depth + 1));
+      } else {
+        final rep = ExplorerItem.fromFileNode(node, depth: depth + 1);
+        rep.isExpanded = children![idx].isExpanded;
+        ret.replaceRange(idx, idx + 1, [rep]);
+      }
+      return copyWith(children: ret);
+    }
+
+    for (final c in children?.where((e) => e.isDirectory) ?? <ExplorerItem>[]) {
+      if (c.path.ancestorOfChild(child: node.path)) {
+        final rep = c.recursiveUpdate(node);
+        final idx = childIndex(childPath: rep.path);
+        ret.replaceRange(idx, idx + 1, [rep]);
+        return copyWith(children: ret);
+      }
+    }
+
+    throw Exception(
+        'Node is not a descendant of this tree and could not be added');
+  }
+
   /// Updates tree preserving status where appropriate.
-  /// Must be called such that the updated node matches the root node
-  void update(FileNode updated) {
-    final updatedTree = ExplorerItem.fromFileNode(updated);
-    mergeHirearchy(updated: updatedTree);
-    // for (final c in updatedTree.children) {
-    //   if (c != null) {
-    //     final match = contains(haystack: children, needle: c);
-    //     if (match != null) {
-    //       mergeHirearchy(original: match, updated: c);
-    //     } else {
-    //       children.add(c);
-    //     }
-    //   }
-    // }
-    print(children);
-  }
+  Future<ExplorerItem> update(FileNode updated) async {
+    // final merged = await populate(child: updated);
 
-  ExplorerItem? contains(
-      {required List<ExplorerItem?> haystack, required ExplorerItem needle}) {
-    for (final straw in haystack) {
-      if (straw?.fullPath == needle.fullPath) {
-        return straw;
-      }
-    }
-    return null;
-  }
-
-  // Need to do depth first and return boolean if we found the target location
-  // Possibly just put the actual filenodes here and just let the original
-  // merge do it's thing, as it's already well-prepared for this sort of
-  // merging. This would entail adjusting the get/set methods to access the
-  // inner [FileNode]s
-  void mergeHirearchy({required ExplorerItem updated}) {
-    print('merge called');
-    for (final c in updated.children) {
-      if (c != null) {
-        final match = contains(haystack: children, needle: c);
-
-        if (match != null) {
-          if (c.isDirectory) {
-            print('found dir at ${match.fullPath}');
-            for (final c2 in c.children) {
-              print(c2);
-              if (c2 != null) {
-                match.mergeHirearchy(updated: c2);
-              }
-            }
-          }
-        } else {
-          children.add(c);
-        }
-      }
-    }
+    return compute<FileNode, ExplorerItem>(recursiveUpdate, updated);
   }
 
   List<ExplorerItem?> buildTree() {
     if (isDirectory) {
       for (final ex in folderExclude) {
-        if (fullPath.contains(ex)) return [];
+        if (path.path.contains(ex)) return [];
       }
     } else {
-      String ext = _path.extension(fullPath).toLowerCase();
+      String ext = _path.extension(path.path).toLowerCase();
       for (final ex in fileExclude) {
         if (ext == ex) return [];
       }
@@ -127,8 +138,8 @@ class ExplorerItem {
     final List<ExplorerItem?> ret = [];
     ret.add(this);
     if (!isExpanded) return ret;
-    for (final c in children) {
-      ret.addAll(c?.buildTree() ?? []);
+    for (final c in children ?? <ExplorerItem>[]) {
+      ret.addAll((c).buildTree());
     }
 
     return ret;
@@ -138,101 +149,40 @@ class ExplorerItem {
     if (!isDirectory) {
       items.add(this);
     }
-    for (final c in children) {
-      c?.files(items);
+    for (final c in children ?? <ExplorerItem>[]) {
+      c.files(items);
     }
   }
 
   void dump() {
     String pad = List.generate(depth, (_) => '--').join();
-    print(' $pad $fullPath');
-    for (final c in children) {
-      c?.dump();
+    print(' $pad ${path.path}');
+    for (final c in children ?? <ExplorerItem>[]) {
+      c.dump();
     }
   }
 
-  ExplorerItem? itemFromPath(String path, {bool deep = true}) {
-    if (path == fullPath) return this;
-    for (final c in children) {
-      if (path == c?.fullPath) return c;
-      if (!deep) continue;
-      ExplorerItem? ci = c?.itemFromPath(path);
-      if (ci != null) {
-        return ci;
-      }
-    }
-    return null;
-  }
+  // ExplorerItem? itemFromPath(String path, {bool deep = true}) {
+  //   if (path == fullPath) return this;
+  //   for (final c in expChildren) {
+  //     if (path == c?.fullPath) return c;
+  //     if (!deep) continue;
+  //     ExplorerItem? ci = c?.itemFromPath(path);
+  //     if (ci != null) {
+  //       return ci;
+  //     }
+  //   }
+  //   return null;
+  // }
 
   ExplorerItem? rootItem() {
     return parent?.rootItem() ?? this;
   }
 
-  bool setData(FileNode node) {
-    if (node.children == null || node.children!.isEmpty) return false;
-
-    List<ExplorerItem?> added = [];
-    List<ExplorerItem?> removed = [];
-    for (final FileNode child in node.children!) {
-      final Map<String, dynamic> item = {};
-      String path = child.path.toFilePath();
-      if (path == '') continue;
-      if (path.startsWith('.')) {
-        path = _path.join(fullPath, path);
-      }
-      String base = _path.basename(path);
-      if (base.startsWith('.')) continue; // skip
-
-      item['path'] = path;
-
-      String dir = _path.dirname(path);
-      if (dir == fullPath && path != fullPath) {
-        ExplorerItem? ci = itemFromPath(path, deep: false);
-        if (ci == null) {
-          ci = ExplorerItem(path);
-          ci.depth = depth + 1;
-          ci.isDirectory = item['isDirectory'];
-          ci.parent = this;
-          children.add(ci);
-          added.add(ci);
-        }
-      }
-    }
-
-    for (final c in children) {
-      bool found = false;
-      String cp = c?.fullPath ?? '';
-      for (final child in node.children!) {
-        String ip = child.path.toFilePath();
-        if (cp == ip) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        removed.add(c);
-      }
-    }
-
-    for (final c in removed) {
-      children.remove(c);
-    }
-
-    children.sort((a, b) {
-      if (a == null || b == null) return 0;
-      if (a.isDirectory != b.isDirectory) {
-        return a.isDirectory ? -1 : 1;
-      }
-      return a.fileName.compareTo(b.fileName);
-    });
-
-    return (removed.length + added.length) > 0;
-  }
-
   @override
   String toString() {
     String pad = List.generate(depth, (_) => '   ').join();
-    return '$pad${isDirectory ? (isExpanded ? '-' : '+') : ' '} $fileName';
+    return '$pad${isDirectory ? (isExpanded ? '-' : '+') : ' '} $name';
   }
 }
 
@@ -254,12 +204,12 @@ class Explorer implements ExplorerListener {
     }
   }
 
-  Future<bool> setRootPath(String path) {
-    String p = _path.normalize(getCorrectPath(path));
-    root = ExplorerItem(p);
-    backend?.setRootPath(p);
-    return loadPath(p);
-  }
+  // Future<bool> setRootPath(String path) {
+  //   String p = _path.normalize(getCorrectPath(path));
+  //   root = ExplorerItem(p);
+  //   backend?.setRootPath(p);
+  //   return loadPath(p);
+  // }
 
   void getWorkingDirectory() {
     backend?.getWorkingDirectory();
@@ -278,10 +228,10 @@ class Explorer implements ExplorerListener {
     return completer.future;
   }
 
-  ExplorerItem? itemFromPath(String path) {
-    String p = _path.normalize(getCorrectPath(path));
-    return root?.itemFromPath(p);
-  }
+  // ExplorerItem? itemFromPath(String path) {
+  //   String p = _path.normalize(getCorrectPath(path));
+  //   return root?.itemFromPath(p);
+  // }
 
   Future<bool> deleteDirectory(String path, {bool recursive = false}) {
     String p = _path.normalize(getCorrectPath(path));
@@ -356,23 +306,28 @@ class Explorer implements ExplorerListener {
   /// Requires json that contains: 'path' and 'items': [{'path' : ... ,
   ///   'isDirectory': ... , 'items': [] }] as a raw string, not a map
   @override
-  void onLoad(FileNode node) {
+  void onLoad(FileNode node) async {
     if (root == null) {
       root = ExplorerItem.fromFileNode(node);
     } else {
-      root?.update(node);
+      final temp = await root?.update(node);
+      temp?.children?.sort((a, b) => ExplorerItem.compareTo(a, b));
+      root?.children = temp?.children;
+    }
+
+    final String p =
+        _path.normalize(getCorrectPath(node.path.getRegularPath()));
+    if (requests.containsKey(p)) {
+      requests[p]?.complete(true);
+      requests.remove(p);
     }
   }
 
-  void onCreate(dynamic item) {}
+  void onCreate(FileNode item) {}
 
-  void onDelete(dynamic item) {
-    dynamic json = jsonDecode(item);
-    String p = _path.normalize(getCorrectPath(json['path']));
-
-    ExplorerItem? _item = itemFromPath(p);
-    _item?.parent?.children.removeWhere((i) => i == item);
-
+  void onDelete(FileNode item) {
+    final String p =
+        _path.normalize(getCorrectPath(item.path.getRegularPath()));
     if (requests.containsKey(p)) {
       requests[p]?.complete(true);
       requests.remove(p);
@@ -400,14 +355,14 @@ class Explorer implements ExplorerListener {
     // Originally, used absolute paths. On Windows, this breaks things with the
     // server, so we use all relative paths
     // print('in getCorrectPath: $path and root path is: ${root?.fullPath}');
-    return _path.relative(path, from: root?.fullPath);
+    return _path.relative(path, from: root?.path.getRegularPath());
   }
 }
 
 abstract class ExplorerListener {
   void onLoad(FileNode node);
-  void onCreate(dynamic item);
-  void onDelete(dynamic item);
+  void onCreate(FileNode item);
+  void onDelete(FileNode item);
   void onError(dynamic error);
 }
 

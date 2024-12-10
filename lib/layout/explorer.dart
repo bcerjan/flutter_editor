@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:editor/services/explorer/remotefs.dart';
+import 'package:editor/services/websocket/models/server_class_defs/file_node.dart';
 import 'package:editor/services/websocket/models/server_class_defs/message_types.dart';
 import 'package:editor/services/websocket/remote_connection.dart';
 import 'package:editor/services/websocket/remote_provider.dart';
@@ -102,12 +103,11 @@ class ExplorerProvider<T extends RemoteConnection> extends ChangeNotifier
 
   void select(ExplorerItem? item) {
     selected = item;
-    onSelect?.call(item); // typically app.open
+    onSelect?.call(item); // typically app.open -> codeController.open
   }
 
   void rebuild() async {
     // update_git_status();
-
     List<ExplorerItem?> _previous = [...tree];
     tree = explorer.tree();
     if (!animate) {
@@ -269,7 +269,7 @@ class ExplorerTreeItem extends StatelessWidget {
     AppProvider app = Provider.of<AppProvider>(context);
     UIProvider ui = Provider.of<UIProvider>(context);
     HLTheme theme = Provider.of<HLTheme>(context);
-    ExplorerItem _item = item ?? ExplorerItem('');
+    ExplorerItem _item = item ?? ExplorerItem(path: Uri.file(''));
     bool expanded = _item.isExpanded;
 
     double size = 16;
@@ -278,7 +278,7 @@ class ExplorerTreeItem extends StatelessWidget {
             size: size, color: theme.comment)
         : Container(width: size);
 
-    bool isFocused = item?.fullPath == app.document?.docPath;
+    bool isFocused = item?.path.path == app.document?.docPath;
     TextStyle? _style =
         style?.copyWith(color: isFocused ? theme.foreground : theme.comment);
 
@@ -299,7 +299,7 @@ class ExplorerTreeItem extends StatelessWidget {
         canRequestFocus: false,
         child: GestureDetector(
             onSecondaryTapDown: (details) {
-              print(_item.fullPath);
+              print(_item.path.path);
               showContextMenu(context);
             },
             child: Container(
@@ -314,7 +314,7 @@ class ExplorerTreeItem extends StatelessWidget {
                               child: icon, padding: const EdgeInsets.all(2)),
                           fileIcon,
                           Text(
-                            ' ${_item.fileName}',
+                            ' ${_item.name}',
                             style: _style,
                             maxLines: 1,
                           ),
@@ -324,9 +324,19 @@ class ExplorerTreeItem extends StatelessWidget {
           if (_item.isDirectory) {
             _item.isExpanded = !expanded;
             if (_item.isExpanded) {
-              provider?.explorer.loadPath(_item.fullPath);
+              provider?.explorer
+                  .loadPath(_item.path.getRegularPath())
+                  .then((_) => provider?.rebuild());
+
+              // provider?.explorer.toggleExpand(_item).then((val) {
+              //   print(provider?.explorer.root?.children);
+              //   if (!_item.isExpanded) {
+              //     provider?.explorer
+              //         .loadPath(_item.path.getRegularPath())
+              //         .then((_) => provider?.rebuild());
+            } else {
+              provider?.rebuild();
             }
-            provider?.rebuild();
           }
           provider?.select(_item);
         });
@@ -376,8 +386,11 @@ class ExplorerTree extends StatelessWidget {
     Size sz = getTextExtents('item', style);
     double itemHeight = sz.height + 8;
     List<ExplorerTreeItem> tree = [
-      ...exp.tree.map(
-          (item) => ExplorerTreeItem(item: item, provider: exp, style: style))
+      ...exp.tree.map((item) => ExplorerTreeItem(
+            item: item,
+            provider: exp,
+            style: style,
+          ))
     ];
 
     Widget _animate(

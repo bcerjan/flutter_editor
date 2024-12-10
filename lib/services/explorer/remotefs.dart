@@ -65,10 +65,8 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
             break;
           case FileChangeType.Deleted:
             for (final l in listeners) {
-              l.onDelete({
-                'path': _path.relative(Uri.file(content['path']).path,
-                    from: rootPath)
-              });
+              //TODO: Need something like 'workspace.findNodeAtPath(...)
+              // l.onDelete(FileNode(isDirectory: ));
             }
             break;
         }
@@ -82,14 +80,10 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
         jsonList: msg.content['content'],
       );
 
-      if (workspace == null) {
-        workspace ??= newTree;
-      } else {
-        newTree = await workspace!.populate(child: newTree);
-      }
+      workspace ??= newTree;
 
       for (final l in listeners) {
-        l.onLoad(newTree);
+        l.onLoad(newTree.convertToRelativePath(rootPath));
       }
     }
   }
@@ -115,10 +109,6 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
     checkConnection();
     connection!.createDirectory(path: path);
     // refreshDirectory(path: path);
-
-    for (final l in listeners) {
-      l.onCreate({'path': path});
-    }
   }
 
   @override
@@ -126,10 +116,6 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
     checkConnection();
     connection!.createFile(path: path);
     // refreshDirectory(path: path);
-
-    for (final l in listeners) {
-      l.onCreate({'path': path});
-    }
   }
 
   @override
@@ -137,10 +123,6 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
     checkConnection();
     connection!.deleteDirectory(path: path);
     // refreshDirectory(path: path);
-
-    for (final l in listeners) {
-      l.onDelete({'path': path});
-    }
   }
 
   @override
@@ -148,10 +130,6 @@ class RemoteFs<T extends RemoteConnection> extends ExplorerBackend<T> {
     checkConnection();
     connection!.deleteFile(path: path);
     // refreshDirectory(path: path);
-
-    for (final l in listeners) {
-      l.onDelete({'path': path});
-    }
   }
 
   @override

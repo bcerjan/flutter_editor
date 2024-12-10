@@ -375,12 +375,13 @@ class _TheApp extends State<TheApp> with WidgetsBindingObserver {
                 List<ExplorerItem?> files = explorer.explorer.files();
                 for (final item in files) {
                   if (item == null) continue;
-                  String relativePath = item.fullPath.substring(
-                      (explorer.explorer.root?.fullPath ?? '').length);
+                  String relativePath = item.path.getRegularPath().substring(
+                      (explorer.explorer.root?.path.getRegularPath() ?? '')
+                          .length);
                   menu?.items.add(UIMenuData()
-                    ..title = item.fileName
+                    ..title = item.name
                     ..subtitle = '.$relativePath'
-                    ..data = item.fullPath);
+                    ..data = item.path.getRegularPath());
                 }
 
                 Future.delayed(const Duration(milliseconds: 50), () {

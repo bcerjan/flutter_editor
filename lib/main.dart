@@ -96,7 +96,7 @@ void main(List<String> args) async {
         if (!app.fixedSidebar) {
           app.openSidebar = false;
         }
-        app.open(item.fullPath, focus: true);
+        app.open(item.path.getRegularPath(), focus: true);
       }
     }
   };

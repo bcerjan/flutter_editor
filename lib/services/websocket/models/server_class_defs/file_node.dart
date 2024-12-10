@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:dart_mappable/dart_mappable.dart';
-import 'package:editor/services/explorer/filesystem.dart';
 import 'package:path/path.dart' as _path;
 import 'package:flutter/foundation.dart';
 import './comm_exceptions.dart';
@@ -38,8 +37,8 @@ class FileNode with FileNodeMappable {
   final int size;
   final List<FileNode>? children;
   final bool isLoaded;
-  final bool
-      isExpanded; // Added this to mark if a directory is expanded in our viewer -- not in the orignal Rust code
+  // Added this to mark if a directory is expanded in our viewer -- not in the orignal Rust code
+  final bool isExpanded;
 
   // This json has the format: {path: /path/, content: [ {FileNode(s)} ]}
   factory FileNode.fromServer({required Map<String, dynamic> json}) {
@@ -66,7 +65,7 @@ class FileNode with FileNodeMappable {
 
   @override
   String toString() {
-    return 'FileNode with path: ${path.toFilePath()}, isDir: $isDirectory';
+    return 'FileNode with path: ${path.toFilePath()}, isDir: $isDirectory, isExpanded: $isExpanded';
   }
 
   /// Convert to format expected by filesystem classes:
@@ -111,42 +110,62 @@ class FileNode with FileNodeMappable {
         ]);
   }
 
-  /// Returns positive value for any node that has at least a partial path match
-  /// higher values indicate more path segments that match
-  static FileNode? updateSubTree(
-      {required FileNode parent, required FileNode child}) {
-    if (!child.path.pathSegments.contains(parent.path.pathSegments.last)) {
-      return null;
-    }
+  /// Returns true if child should be in this node's children (as in, it is a
+  /// child of this node). Will return false if the child is a child somewhere
+  /// down the tree.
+  bool immediateChild({required FileNode child}) {
+    return path == Uri.file(_path.dirname(child.path.toFilePath()));
+  }
 
-    if (parent.children == null || parent.children!.isEmpty) {
-      // TODO: check if this fails for subdirectories with identical names as
-      // their parent
-      final List<String> needed = child.path.pathSegments
-          .toSet()
-          .difference(parent.path.pathSegments.toSet())
-          .toList();
-      if (needed.isNotEmpty) {
-        return createSubPath(
-            segments: needed, basePath: parent.path.toFilePath());
+  /// Returns true if this node has the child somewhere in its descendants
+  bool ancestorOfChild({required FileNode child}) {
+    final List<String> initSegments = List<String>.from(path.pathSegments);
+    final List<String> childSegments =
+        List<String>.from(child.path.pathSegments);
+
+    final int initSegNum = initSegments.length;
+    final subList = childSegments.sublist(0, initSegNum - 1);
+    if (subList == initSegments) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Returns the index of the child if it's already in our list, or -1 if it
+  /// isn't there yet.
+  int childIndex({required FileNode child}) {
+    return children?.indexWhere((c) => c.path == child.path) ?? -1;
+  }
+
+  FileNode insertSubNode({required FileNode child}) {
+    // If we are at the correct location already, insert
+    if (immediateChild(child: child)) {
+      final int idx = childIndex(child: child);
+      final updated = List<FileNode>.from(children ?? []);
+      if (idx >= 0) {
+        // Replace with new child, preserve if it is expanded (or not)
+        // child.isExpanded = children![idx].isExpanded;
+        if (child.isDirectory) {
+          print(child.isExpanded);
+          print(children![idx].isExpanded);
+        }
+
+        updated.replaceRange(idx, idx + 1, [child]);
+        return copyWith(children: updated);
+      } else {
+        updated.add(child);
+        return copyWith(children: updated);
       }
     }
 
-    // We updated this node
-    if (parent.path == child.path) {
-      return child;
-    }
-
-    FileNode? ret;
-    for (final p in parent.children!) {
-      ret = updateSubTree(parent: p, child: child);
-      if (ret != null) {
-        return ret;
+    // Else, we need to go down one level:
+    for (final c in children ?? []) {
+      if (c.ancestorOfChild(child: child)) {
+        return c.insertSubNode(child: child);
       }
     }
 
-    // Maybe throw an error here?
-    return null;
+    throw const FileNodeUpdateException('Could not place node in tree');
   }
 }
 
@@ -177,42 +196,17 @@ FileNode updateNodeTree(List<FileNode> input) {
 
   final FileNode init = input[0];
   final FileNode child = input[1];
-
   // This is a root location
   if (child.path.pathSegments.length == 1) {
     return child;
   }
 
-  final Set<String> initSegments = Set<String>.from(init.path.pathSegments);
-  final List<String> childSegments = List<String>.from(child.path.pathSegments);
-  final List<String> needed = [];
-
-  for (final seg in childSegments) {
-    if (initSegments.add(seg)) {
-      needed.add(seg);
-    }
-  }
-
-  // Parent has no children, so we need to make a whole tree below where we are
-  if (init.children == null || init.children!.isEmpty) {
-    return init.copyWith(children: [
-      FileNode.createSubPath(
-        segments: needed,
-        basePath: init.path.toFilePath(),
-      )
-    ]);
+  if (child.path == init.path) {
+    return child;
   }
 
   // child is (hopefully) somewhere in the tree of children of this parent:
-
-  final ret = FileNode.updateSubTree(parent: init, child: child);
-
-  if (ret == null) {
-    throw const FileNodeUpdateException(
-        'Could not place / update new node in tree');
-  }
-
-  return ret;
+  return init.insertSubNode(child: child);
 }
 
 @MappableClass()
